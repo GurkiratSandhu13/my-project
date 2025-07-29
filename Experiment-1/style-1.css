@@ -1,0 +1,15 @@
+h1{
+    color: red;
+}
+body{
+    padding: 20px;
+    margin: 30px;
+    background-color: powderblue;
+    border: 5px solid black;
+    border-radius: 10px;
+}
+input{
+    display: flex;
+    flex-direction:column;
+    background-color: bisque;
+}
