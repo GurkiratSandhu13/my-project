@@ -1,0 +1,38 @@
+.outerContainer{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: aliceblue;
+}
+
+.innerContainer{
+    /* height :150px; */
+    /* width :250px; */
+    /* display: flex;
+    flex-direction: column; */
+    align-items: center;
+    background-color: white;
+    border: 1px solid black;
+    border-radius: 10px;
+    padding: 20px;
+}
+#buttonContainer{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background-color: white;
+
+}
+#deposit{
+    /* height: 50px;
+    width: 100px; */
+    border-radius: 10px;
+    background-color: green;
+}
+#withdraw{
+    /* height: 50px;
+    width: 100px; */
+    border-radius: 10px;
+    background-color:red;
+}
