@@ -18,21 +18,38 @@
     padding: 20px;
 }
 #buttonContainer{
+    flex-wrap: wrap;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
     background-color: white;
-
+    gap: 10px; /* Add gap between buttons */
 }
 #deposit{
     /* height: 50px;
     width: 100px; */
     border-radius: 10px;
     background-color: green;
+    padding: 10px 20px; /* Add padding for better button appearance */
+    color: white; /* Make text white for better contrast */
+    border: none; /* Remove default border */
+    cursor: pointer; /* Add pointer cursor */
 }
 #withdraw{
     /* height: 50px;
     width: 100px; */
     border-radius: 10px;
     background-color:red;
+    padding: 10px 20px; /* Add padding for better button appearance */
+    color: white; /* Make text white for better contrast */
+    border: none; /* Remove default border */
+    cursor: pointer; /* Add pointer cursor */
 }
+
+@media screen and (max-width: 768px) {
+    #buttonContainer {
+        flex-direction: column; /* Change to column layout on smaller screens */
+        gap: 15px; /* Increase gap for better spacing in column */
+    }
+}
+
