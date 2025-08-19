@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Character Counter</title>
+    <link rel="stylesheet" href="style-4.css">
+</head>
+<body>
+    <h1>Live Character Counter</h1>
+    <input type="text" id="textInput" placeholder="Start Typing...">
+    <h4>Character Count: <span id="charCount">0</span></h4>
+    
+    <script>
+        const textInput = document.getElementById('textInput');
+        const charCount = document.getElementById('charCount');
+        
+        textInput.addEventListener('input', function() {
+            charCount.textContent = textInput.value.length;
+        });
+    </script>
+</body>
+</html>
