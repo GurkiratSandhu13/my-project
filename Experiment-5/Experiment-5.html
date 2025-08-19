@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product List</title>
+    <link rel="stylesheet" href="style-5.css">
+</head>
+<body>
+    <h1>Product List</h1>
+    <h4>Filter by Category:</h4>
+    <select id="categoryFilter">
+        <option value="All">All</option>
+        <option value="clothing">Clothing</option>
+        <option value="electronics">Electronics</option>
+        <option value="books">Books</option>
+    </select>
+    
+    <div class="clothing product">T Shirt</div>
+    <div class="clothing product">Jeans</div>
+    <div class="electronics product">Smartphone</div>
+    <div class="electronics product">Headphones</div>
+    <div class="books product">Cookbook</div>
+    <div class="books product">Novel</div>
+    
+    <script>
+        const categoryFilter = document.getElementById('categoryFilter');
+        const products = document.querySelectorAll('.product');
+        
+        categoryFilter.addEventListener('change', function() {
+            const selectedCategory = this.value;
+            
+            products.forEach(product => {
+                if (selectedCategory === 'All' || product.classList.contains(selectedCategory)) {
+                    product.style.display = 'block';
+                } else {
+                    product.style.display = 'none';
+                }
+            });
+        });
+    </script>
+</body>
+</html>
