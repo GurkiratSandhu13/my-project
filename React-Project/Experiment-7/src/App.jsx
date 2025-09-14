@@ -4,19 +4,23 @@ import viteLogo from '/vite.svg'
 import './App.css'
 import ProductCard from './ProductCard.jsx'
 
-const products = [
-  { name: 'Wireless Mouse', price: 25.99, inStock: true },
-  { name: 'Keyboard', price: 45.5, inStock: false },
-  { name: 'Monitor', price: 199.99, inStock: true }
-]
-
 function App() {
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'row', gap: '1rem' }}>
-      <ProductCard product={products[0]} />
-      <ProductCard product={products[1]} />
-      <ProductCard product={products[2]} />
+    <div class ="outer-div">
+       <div id = "list">Product List</div>
+       <div className="cart">
+      <ProductCard product={{ name: "Wireless Mouse", price: 100, status: "Available" }} />
+      <ProductCard product={{ name: "Monitor", price: 200, status: "Out of Stock" }} />
+      <ProductCard product={{ name: "Play Station 5", price: 300, status: "Available" }} />
+      </div>
+      <div className="cart">
+      <ProductCard product={{ name: "IPhone 17", price: 990, status: "Available" }} />
+      <ProductCard product={{ name: "MacBook Pro", price: 1490, status: "Available" }} />
+      <ProductCard product={{ name: "Samsung S21", price: 699, status: "Out of Stock" }} />
+      </div>
     </div>
+
   )
 }
 

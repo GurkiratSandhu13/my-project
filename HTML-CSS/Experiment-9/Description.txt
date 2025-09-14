@@ -1,0 +1,84 @@
+To implement object-oriented programming (OOP) using ES6 classes in JavaScript by creating a base class (Person) and
+extending it into subclasses (Student and Teacher). The goal is to understand inheritance, constructor chaining, and 
+method overriding in real-world scenarios.
+
+Theory :
+---------
+Inheritance allows a child class to reuse properties and methods of a parent class, promoting code reuse and modularity.
+   - Base class (Person): has common properties like name and age and a method to display them.
+   - Subclasses (Student, Teacher): extend Person, add specific properties (grade or subject), and 
+     can override methods to show detailed info.
+   - Purpose: Demonstrates code reuse, method overriding, and polymorphism.
+
+File Hierarchy
+-------------
+Experiment-9/
+├── index.html            → Main HTML page containing structure and linking CSS + JS.
+├── style.css             → Provides card layout, button styles, and page formatting.
+└── script.js             → Contains Person, Student, and Teacher classes with logic for inheritance and display.
+
+Functionality
+------------
+ 1. Base Class (Person)
+    - Properties: name, age.
+    - Method: displayInfo() → Returns formatted string with basic info.
+    - Example: Name: Aman, Age: 20
+
+2. Student Subclass
+    - Extends Person.
+    - Adds property: grade.
+    - Overrides displayInfo() → Calls parent (super.displayInfo()) and appends grade.
+    - Example: Name: Aman, Age: 20, Grade: B+
+
+3. Teacher Subclass
+    - Extends Person.
+    - Adds property: subject.  
+    - Overrides displayInfo() → Calls parent and appends subject.
+    - Example: Name: Mr. Sharma, Age: 40, Subject: Mathematics
+
+4. Dynamic Rendering in Browser
+    - Function showDetails(obj, title) creates a card dynamically.
+    - Each card displays:
+    - Title (Student/Teacher).
+    - Details (displayInfo()).
+    - A button that triggers alert() with details.
+    - Example: Clicking “Show Alert” for Student → Pops up student details.
+
+5. Styling (style.css)
+    - Flexbox Layout → Centers content on the page.    
+    - Cards → White background, shadow, padding, rounded corners.    
+    - Button Styling → Blue button with hover effect.
+
+Demonstration Use Case
+----------------------
+A school management system where:
+   - Students have Name, Age, Grade.
+   - Teachers have Name, Age, Subject.
+   - both inherit common fields (name, age) from Person.
+   - Example on browser:
+      - Student Card → Aman, 20, Grade: B+
+      - Teacher Card → Mr. Sharma, 40, Subject: Mathematics
+      - Clicking Show Alert shows the same info in a popup.
+
+Tech Stack :
+-----------
+HTML5 → Structure.
+CSS3 (Flexbox) → Styling and layout.
+JavaScript (ES6) → Classes, inheritance, DOM manipulation.
+
+Key Concepts Showcased
+---------------------
+Inheritance (extends) – Student and Teacher inherit from Person.
+Constructor Chaining (super()) – Calls parent constructor to reuse logic.
+Method Overriding – Subclasses override displayInfo() but reuse parent logic with super.
+DOM Manipulation – Dynamically creating and rendering student/teacher cards.
+Event Handling – Buttons trigger alert() to show details.
+
+Learning Outcomes :
+------------------
+Learned how to create base and subclass relationships in JavaScript.
+Understood constructor chaining with super().
+Practiced method overriding for custom behavior in subclasses.
+Applied DOM manipulation to render objects dynamically.
+Designed interactive UI cards with CSS and JavaScript.
+Explored a real-world use case (school system with Students & Teachers).
