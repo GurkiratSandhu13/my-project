@@ -223,7 +223,3 @@ If you have any questions or need help:
 1. Check the [Issues](../../issues) section
 2. Create a new issue if your problem isn't already listed
 3. Provide detailed information about your problem
-
----
-
-**Made with ❤️ for learning Node.js CLI development**
