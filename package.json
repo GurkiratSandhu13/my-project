@@ -1,0 +1,23 @@
+{
+  "name": "cli-employee-management",
+  "version": "1.0.0",
+  "description": "A CLI Employee Management System using Node.js and Arrays",
+  "main": "src/app.js",
+  "scripts": {
+    "start": "node src/app.js",
+    "dev": "node src/app.js"
+  },
+  "keywords": [
+    "cli",
+    "employee",
+    "management",
+    "nodejs",
+    "arrays",
+    "readline"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}
