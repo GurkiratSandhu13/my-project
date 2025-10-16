@@ -10,10 +10,11 @@ function ProductList() {
     const fetchProducts = async () => {
       try {
         setLoading(true);
-        const response = await axios.get('http://localhost:5000/api/products');
+        const response = await axios.get('/api/products');
         setProducts(response.data);
       } catch (err) {
-        setError('Failed to fetch products. Make sure the backend server is running.');
+        console.error('GET /api/products failed:', err?.message || err);
+        setError('Failed to fetch products. Check backend and proxy configuration.');
       } finally {
         setLoading(false);
       }
