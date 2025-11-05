@@ -10,13 +10,17 @@ import { generateUserId } from '../services/ids.js';
 const router = Router();
 
 const registerSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(8),
+  email: z.string().trim().min(1).email('Please enter a valid email address.'),
+  password: z
+    .string()
+    .min(3, 'Password must be at least 3 characters long.')
+    .max(15, 'Password must be no more than 15 characters long.')
+    .transform((s) => s.trim()),
 });
 
 const loginSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(1),
+  email: z.string().trim().min(1).email('Please enter a valid email address.'),
+  password: z.string().min(1).transform((s) => s.trim()),
 });
 
 // POST /api/auth/register
@@ -24,17 +28,14 @@ router.post('/register', async (req: Request, res: Response) => {
   try {
     const { email, password } = registerSchema.parse(req.body);
 
-    // Check if user exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       res.status(400).json({ error: 'User already exists' });
       return;
     }
 
-    // Hash password
     const hash = await bcrypt.hash(password, 10);
 
-    // Create user
     const user = new User({
       _id: generateUserId(),
       email,
@@ -43,15 +44,13 @@ router.post('/register', async (req: Request, res: Response) => {
     });
     await user.save();
 
-    // Generate token
     const token = generateToken(user._id);
 
-    // Set cookie
     res.cookie('token', token, {
       httpOnly: true,
       secure: config.auth.cookieSecure,
       sameSite: 'lax',
-      maxAge: 24 * 60 * 60 * 1000, // 1 day
+      maxAge: 24 * 60 * 60 * 1000,
     });
 
     res.status(201).json({
@@ -64,7 +63,10 @@ router.post('/register', async (req: Request, res: Response) => {
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      res.status(400).json({ error: 'Validation failed', details: error.errors });
+      res.status(400).json({
+        error: 'Validation failed',
+        details: error.errors.map((e) => ({ path: e.path.join('.'), message: e.message })),
+      });
       return;
     }
     logger.error({ error }, 'Registration error');
@@ -77,29 +79,25 @@ router.post('/login', async (req: Request, res: Response) => {
   try {
     const { email, password } = loginSchema.parse(req.body);
 
-    // Find user
     const user = await User.findOne({ email });
     if (!user) {
       res.status(401).json({ error: 'Invalid credentials' });
       return;
     }
 
-    // Verify password
     const valid = await bcrypt.compare(password, user.hash);
     if (!valid) {
       res.status(401).json({ error: 'Invalid credentials' });
       return;
     }
 
-    // Generate token
     const token = generateToken(user._id);
 
-    // Set cookie
     res.cookie('token', token, {
       httpOnly: true,
       secure: config.auth.cookieSecure,
       sameSite: 'lax',
-      maxAge: 24 * 60 * 60 * 1000, // 1 day
+      maxAge: 24 * 60 * 60 * 1000,
     });
 
     res.json({
@@ -112,7 +110,10 @@ router.post('/login', async (req: Request, res: Response) => {
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      res.status(400).json({ error: 'Validation failed', details: error.errors });
+      res.status(400).json({
+        error: 'Validation failed',
+        details: error.errors.map((e) => ({ path: e.path.join('.'), message: e.message })),
+      });
       return;
     }
     logger.error({ error }, 'Login error');

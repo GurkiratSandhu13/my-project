@@ -12,3 +12,4 @@ export function formatTime(date: string | Date): string {
   return format(new Date(date), 'HH:mm');
 }
 
+

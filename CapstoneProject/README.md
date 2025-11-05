@@ -350,3 +350,4 @@ For issues and questions:
 3. Check browser console for frontend errors
 4. Verify environment variables are set correctly
 
+
