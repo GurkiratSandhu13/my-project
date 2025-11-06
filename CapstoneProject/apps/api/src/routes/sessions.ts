@@ -88,6 +88,37 @@ router.post(
   }
 );
 
+// GET /api/sessions/messages?sessionId=...
+router.get('/messages', authenticate, async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.userId!;
+    const { sessionId } = req.query;
+
+    if (!sessionId || typeof sessionId !== 'string') {
+      res.status(400).json({ error: 'sessionId required' });
+      return;
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(sessionId)) {
+      res.status(400).json({ error: 'Invalid sessionId format' });
+      return;
+    }
+
+    // Verify session belongs to user
+    const session = await Session.findById(sessionId);
+    if (!session || session.userId !== userId) {
+      res.status(404).json({ error: 'Session not found' });
+      return;
+    }
+
+    const messages = await Message.find({ sessionId }).sort({ createdAt: 1 });
+    res.json({ messages });
+  } catch (error) {
+    logger.error({ error }, 'Get messages error');
+    res.status(500).json({ error: 'Failed to get messages' });
+  }
+});
+
 // GET /api/sessions/:id
 router.get('/:id', authenticate, async (req: AuthRequest, res: Response) => {
   try {
@@ -242,38 +273,7 @@ router.post('/:id/summarize', authenticate, async (req: AuthRequest, res: Respon
   }
 });
 
-// GET /api/messages?sessionId=...
-router.get('/messages', authenticate, async (req: AuthRequest, res: Response) => {
-  try {
-    const userId = req.userId!;
-    const { sessionId } = req.query;
-
-    if (!sessionId || typeof sessionId !== 'string') {
-      res.status(400).json({ error: 'sessionId required' });
-      return;
-    }
-
-    if (!mongoose.Types.ObjectId.isValid(sessionId)) {
-      res.status(400).json({ error: 'Invalid sessionId format' });
-      return;
-    }
-
-    // Verify session belongs to user
-    const session = await Session.findById(sessionId);
-    if (!session || session.userId !== userId) {
-      res.status(404).json({ error: 'Session not found' });
-      return;
-    }
-
-    const messages = await Message.find({ sessionId }).sort({ createdAt: 1 });
-    res.json({ messages });
-  } catch (error) {
-    logger.error({ error }, 'Get messages error');
-    res.status(500).json({ error: 'Failed to get messages' });
-  }
-});
-
-// GET /api/export/:id
+// GET /api/sessions/export/:id
 router.get('/export/:id', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.userId!;

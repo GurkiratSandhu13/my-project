@@ -6,7 +6,6 @@ import { validateBody, chatRequestSchema } from '../middleware/safety.js';
 import { SSESender } from '../utils/sse.js';
 import { countMessageTokens, estimateTokens } from '../utils/tokens.js';
 import { recordRequest, recordError } from '../services/usage.js';
-import { generateMessageId } from '../services/ids.js';
 import { logger } from '../utils/logger.js';
 import { summarizeConversation } from '../services/summarize.js';
 import { config } from '../config.js';
@@ -102,7 +101,6 @@ router.post(
 
       // Save messages
       const userMessage = new Message({
-        _id: generateMessageId(),
         sessionId,
         role: 'user',
         content,
@@ -111,7 +109,6 @@ router.post(
       await userMessage.save();
 
       const assistantMessage = new Message({
-        _id: generateMessageId(),
         sessionId,
         role: 'assistant',
         content: response.message?.content ?? '',
@@ -255,7 +252,6 @@ router.post(
 
       // Save messages
       const userMessage = new Message({
-        _id: generateMessageId(),
         sessionId,
         role: 'user',
         content,
@@ -264,7 +260,6 @@ router.post(
       await userMessage.save();
 
       const assistantMessage = new Message({
-        _id: generateMessageId(),
         sessionId,
         role: 'assistant',
         content: fullResponse,

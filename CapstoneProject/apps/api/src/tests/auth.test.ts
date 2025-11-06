@@ -47,7 +47,7 @@ describe('Auth Routes', () => {
       password: 'password123',
     });
 
-    expect(response.status).toBe(400);
+    expect(response.status).toBe(409);
   });
 
   test('POST /api/auth/login - should login with valid credentials', async () => {

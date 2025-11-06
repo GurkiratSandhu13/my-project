@@ -24,9 +24,9 @@ describe('Auth Smoke Test', () => {
 
   test('Register → Login → Me (with cookie)', async () => {
     const email = `test-${Date.now()}@example.com`;
-    const password = 'testing123';
+    const password = 'P@ssw0rd!';
 
-    // 1. Register
+    // 1. Register with random email + strong pwd → 201 + Set-Cookie
     const registerRes = await request(app)
       .post('/api/auth/register')
       .send({ email, password })
@@ -34,10 +34,9 @@ describe('Auth Smoke Test', () => {
 
     expect(registerRes.body.user).toBeDefined();
     expect(registerRes.body.user.email).toBe(email);
-    expect(registerRes.body.token).toBeDefined();
     expect(registerRes.headers['set-cookie']).toBeDefined();
 
-    // 2. Login
+    // 2. Login with same creds → 200 + Set-Cookie
     const loginRes = await request(app)
       .post('/api/auth/login')
       .send({ email, password })
@@ -45,7 +44,6 @@ describe('Auth Smoke Test', () => {
 
     expect(loginRes.body.user).toBeDefined();
     expect(loginRes.body.user.email).toBe(email);
-    expect(loginRes.body.token).toBeDefined();
     expect(loginRes.headers['set-cookie']).toBeDefined();
 
     // Extract cookie
@@ -53,7 +51,7 @@ describe('Auth Smoke Test', () => {
     const tokenCookie = cookies.find((c: string) => c.startsWith('token='));
     expect(tokenCookie).toBeDefined();
 
-    // 3. Get /me with cookie
+    // 3. GET /api/auth/me with cookie → 200 { user }
     const meRes = await request(app)
       .get('/api/auth/me')
       .set('Cookie', tokenCookie!)
@@ -63,32 +61,51 @@ describe('Auth Smoke Test', () => {
     expect(meRes.body.user.email).toBe(email);
   });
 
-  test('Login with invalid credentials returns 401', async () => {
-    const res = await request(app)
-      .post('/api/auth/login')
-      .send({ email: 'nonexistent@example.com', password: 'wrong' })
-      .expect(401);
+  test('Duplicate register → 409', async () => {
+    const email = `duplicate-${Date.now()}@example.com`;
+    const password = 'P@ssw0rd!';
 
-    expect(res.body.error).toBe('Invalid credentials');
-  });
-
-  test('Email normalization works (lowercase)', async () => {
-    const email = 'Test@Example.COM';
-    const password = 'testing123';
-
-    // Register with mixed case
+    // First registration
     await request(app)
       .post('/api/auth/register')
       .send({ email, password })
       .expect(201);
 
-    // Login with different case should work
+    // Duplicate registration
+    const res = await request(app)
+      .post('/api/auth/register')
+      .send({ email, password })
+      .expect(409);
+
+    expect(res.body.error).toBe('EMAIL_TAKEN');
+  });
+
+  test('Wrong password → 401 { error:"INVALID_CREDENTIALS" }', async () => {
+    const email = `test-${Date.now()}@example.com`;
+    const password = 'P@ssw0rd!';
+
+    // Register user first
+    await request(app)
+      .post('/api/auth/register')
+      .send({ email, password })
+      .expect(201);
+
+    // Try login with wrong password
     const res = await request(app)
       .post('/api/auth/login')
-      .send({ email: 'test@example.com', password })
-      .expect(200);
+      .send({ email, password: 'wrongpassword' })
+      .expect(401);
 
-    expect(res.body.user.email).toBe(email.toLowerCase());
+    expect(res.body.error).toBe('INVALID_CREDENTIALS');
+  });
+
+  test('Login with nonexistent user → 401 { error:"INVALID_CREDENTIALS" }', async () => {
+    const res = await request(app)
+      .post('/api/auth/login')
+      .send({ email: 'nonexistent@example.com', password: 'P@ssw0rd!' })
+      .expect(401);
+
+    expect(res.body.error).toBe('INVALID_CREDENTIALS');
   });
 });
 

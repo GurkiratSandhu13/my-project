@@ -82,9 +82,10 @@ export default function HistorySidebar({ onClose }: { onClose: () => void }) {
     setLoading(true);
     try {
       const data = await sessionsApi.list();
-      setSessions(data);
+      setSessions(data.sessions || []);
     } catch (error) {
       console.error('Failed to load sessions:', error);
+      setSessions([]);
     } finally {
       setLoading(false);
     }

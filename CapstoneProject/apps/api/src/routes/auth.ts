@@ -5,22 +5,17 @@ import { User } from '../db/models/User.js';
 import { authenticate, generateToken, type AuthRequest } from '../middleware/auth.js';
 import { config } from '../config.js';
 import { logger } from '../utils/logger.js';
-import { generateUserId } from '../services/ids.js';
 
 const router = Router();
 
 const registerSchema = z.object({
-  email: z.string().trim().min(1).email('Please enter a valid email address.'),
-  password: z
-    .string()
-    .min(3, 'Password must be at least 3 characters long.')
-    .max(15, 'Password must be no more than 15 characters long.')
-    .transform((s) => s.trim()),
+  email: z.string().trim().toLowerCase().email('Please enter a valid email address.'),
+  password: z.string().min(6, 'Password must be at least 6 characters long.').max(64, 'Password must be no more than 64 characters long.'),
 });
 
 const loginSchema = z.object({
-  email: z.string().trim().min(1).email('Please enter a valid email address.'),
-  password: z.string().min(1).transform((s) => s.trim()),
+  email: z.string().trim().toLowerCase().email('Please enter a valid email address.'),
+  password: z.string().min(1, 'Password is required.'),
 });
 
 // POST /api/auth/register
@@ -30,14 +25,13 @@ router.post('/register', async (req: Request, res: Response) => {
 
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      res.status(400).json({ error: 'User already exists' });
+      res.status(409).json({ error: 'EMAIL_TAKEN' });
       return;
     }
 
-    const hash = await bcrypt.hash(password, 10);
+    const hash = await bcrypt.hash(password, 12);
 
     const user = new User({
-      _id: generateUserId(),
       email,
       hash,
       role: 'user',
@@ -48,8 +42,9 @@ router.post('/register', async (req: Request, res: Response) => {
 
     res.cookie('token', token, {
       httpOnly: true,
-      secure: config.auth.cookieSecure,
       sameSite: 'lax',
+      secure: false, // dev
+      path: '/',
       maxAge: 24 * 60 * 60 * 1000,
     });
 
@@ -59,7 +54,6 @@ router.post('/register', async (req: Request, res: Response) => {
         email: user.email,
         role: user.role,
       },
-      token,
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -81,13 +75,13 @@ router.post('/login', async (req: Request, res: Response) => {
 
     const user = await User.findOne({ email });
     if (!user) {
-      res.status(401).json({ error: 'Invalid credentials' });
+      res.status(401).json({ error: 'INVALID_CREDENTIALS' });
       return;
     }
 
     const valid = await bcrypt.compare(password, user.hash);
     if (!valid) {
-      res.status(401).json({ error: 'Invalid credentials' });
+      res.status(401).json({ error: 'INVALID_CREDENTIALS' });
       return;
     }
 
@@ -95,8 +89,9 @@ router.post('/login', async (req: Request, res: Response) => {
 
     res.cookie('token', token, {
       httpOnly: true,
-      secure: config.auth.cookieSecure,
       sameSite: 'lax',
+      secure: false, // dev
+      path: '/',
       maxAge: 24 * 60 * 60 * 1000,
     });
 
@@ -106,7 +101,6 @@ router.post('/login', async (req: Request, res: Response) => {
         email: user.email,
         role: user.role,
       },
-      token,
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -123,7 +117,7 @@ router.post('/login', async (req: Request, res: Response) => {
 
 // POST /api/auth/logout
 router.post('/logout', authenticate, (req: AuthRequest, res: Response) => {
-  res.clearCookie('token');
+  res.clearCookie('token', { path: '/' });
   res.json({ message: 'Logged out' });
 });
 

@@ -24,10 +24,12 @@ export default function MessageList() {
     if (!currentSessionId) return;
 
     const loadMessages = async () => {
+      if (!currentSessionId) return;
+      
       setLoading(true);
       try {
         const data = await sessionsApi.getMessages(currentSessionId);
-        setMessages(data);
+        setMessages(data.messages || []);
       } catch (error: any) {
         console.error('Failed to load messages:', error);
         const errorMessage = error?.response?.data?.error || error?.response?.data?.message || 'Failed to load messages';
@@ -35,6 +37,7 @@ export default function MessageList() {
         if (error?.response?.status !== 404) {
           alert(`Error loading messages: ${errorMessage}`);
         }
+        setMessages([]);
       } finally {
         setLoading(false);
       }

@@ -21,3 +21,4 @@ curl -s -c cookies.txt -b cookies.txt "$base/api/messages?sessionId=$sid" | jq .
 echo OK
 
 
+

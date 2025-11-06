@@ -18,8 +18,8 @@ export default function Login() {
 
     const trimmedPassword = password.trim();
     if (!isLogin) {
-      if (trimmedPassword.length < 3 || trimmedPassword.length > 15) {
-        setError('Password must be 3–15 characters.');
+      if (trimmedPassword.length < 6 || trimmedPassword.length > 64) {
+        setError('Password must be 6–64 characters.');
         return;
       }
     }
@@ -27,23 +27,37 @@ export default function Login() {
     setLoading(true);
 
     try {
+      console.log('Attempting', isLogin ? 'login' : 'register', 'with:', {
+        email: email.trim(),
+        passwordLength: trimmedPassword.length
+      });
+      
       const data = isLogin
         ? await authApi.login(email.trim(), trimmedPassword)
         : await authApi.register(email.trim(), trimmedPassword);
 
+      console.log('Auth success:', data);
       setUser(data.user);
       navigate('/chat');
     } catch (err: any) {
+      console.error('Auth error:', err);
       const details = err?.response?.data?.details as Array<{ path: string; message: string }> | undefined;
       if (details && details.length > 0) {
         setError(details.map((d) => d.message).join(' '));
       } else {
-        setError(
-          err?.response?.data?.error ||
-            (isLogin
-              ? 'Invalid credentials. Please check your email and password.'
-              : 'Validation failed. Password must be 3–15 characters.')
-        );
+        const errorMessage = err?.response?.data?.error;
+        if (errorMessage === 'EMAIL_TAKEN') {
+          setError('This email is already registered. Please use a different email or sign in instead.');
+        } else if (errorMessage === 'INVALID_CREDENTIALS') {
+          setError('Invalid credentials. Please check your email and password.');
+        } else {
+          setError(
+            errorMessage ||
+              (isLogin
+                ? 'Invalid credentials. Please check your email and password.'
+                : 'Validation failed. Password must be 6–64 characters.')
+          );
+        }
       }
     } finally {
       setLoading(false);
@@ -57,7 +71,7 @@ export default function Login() {
           <h2 className="text-center text-3xl font-extrabold text-gray-900">
             {isLogin ? 'Sign in' : 'Sign up'}
           </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">MERN AI Chatbot</p>
+          <p className="mt-2 text-center text-sm text-gray-600">Beli — Your Study Buddy & Uni Companion</p>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           {error && (
@@ -92,15 +106,15 @@ export default function Login() {
                 type="password"
                 autoComplete={isLogin ? 'current-password' : 'new-password'}
                 required
-                minLength={isLogin ? undefined : 3}
-                maxLength={isLogin ? undefined : 15}
+                minLength={isLogin ? undefined : 6}
+                maxLength={isLogin ? undefined : 64}
                 className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder={isLogin ? 'Password' : 'Password (3–15 characters)'}
+                placeholder={isLogin ? 'Password' : 'Password (6–64 characters)'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
               {!isLogin && (
-                <p className="mt-1 text-xs text-gray-500">Password must be 3–15 characters.</p>
+                <p className="mt-1 text-xs text-gray-500">Password must be 6–64 characters.</p>
               )}
             </div>
           </div>

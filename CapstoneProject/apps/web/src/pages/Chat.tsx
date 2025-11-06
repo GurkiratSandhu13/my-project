@@ -1,15 +1,24 @@
 import { useState, useEffect } from 'react';
 import { useChatStore } from '../lib/store';
-import { authApi } from '../lib/api';
+import { authApi, sessionsApi } from '../lib/api';
 import { useNavigate } from 'react-router-dom';
 import ChatWindow from '../components/chat/ChatWindow';
 import HistorySidebar from '../components/chat/HistorySidebar';
 import ModelSelector from '../components/chat/ModelSelector';
+import Controls from '../components/chat/Controls';
+
+interface Session {
+  _id: string;
+  title: string;
+  lastActivityAt: string;
+  createdAt: string;
+}
 
 export default function Chat() {
-  const { user, setUser } = useChatStore();
+  const { user, setUser, currentSessionId, setCurrentSession } = useChatStore();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [initializing, setInitializing] = useState(true);
 
   const handleLogout = async () => {
     try {
@@ -21,8 +30,52 @@ export default function Chat() {
     }
   };
 
+  // Initialize session on first load
+  useEffect(() => {
+    const initializeSession = async () => {
+      if (!user) return;
+      
+      try {
+        // Check if user has existing sessions
+        const data = await sessionsApi.list();
+        const sessions: Session[] = data.sessions || [];
+        
+        if (sessions.length === 0) {
+          // No sessions exist, create first session
+          console.log('Creating first session for new user...');
+          const newSession = await sessionsApi.create({
+            title: 'Welcome to Beli! 👋',
+            systemPrompt: 'You are Beli, a friendly AI study companion for students. Help them with their studies, provide summaries, answer questions, and offer support with a warm, encouraging tone.'
+          });
+          setCurrentSession(newSession._id);
+        } else if (!currentSessionId || !sessions.find((s: Session) => s._id === currentSessionId)) {
+          // No current session selected or current session doesn't exist, select the most recent one
+          const mostRecent = sessions.sort((a: Session, b: Session) => new Date(b.lastActivityAt).getTime() - new Date(a.lastActivityAt).getTime())[0];
+          setCurrentSession(mostRecent._id);
+        }
+      } catch (error) {
+        console.error('Failed to initialize session:', error);
+      } finally {
+        setInitializing(false);
+      }
+    };
+
+    initializeSession();
+  }, [user, currentSessionId, setCurrentSession]);
+
   if (!user) {
     return null;
+  }
+
+  if (initializing) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Setting up your chat...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -51,7 +104,7 @@ export default function Chat() {
                 />
               </svg>
             </button>
-            <h1 className="text-xl font-semibold">MERN AI Chatbot</h1>
+            <h1 className="text-xl font-semibold">Beli — Your Study Buddy</h1>
             <div className="ml-4"><ModelSelector /></div>
           </div>
           <div className="flex items-center gap-4">
@@ -69,7 +122,7 @@ export default function Chat() {
             <ChatWindow />
           </div>
           <div className="w-80 border-l border-gray-200 bg-white">
-            {/* original Controls panel intentionally restored (component handles its UI) */}
+            <Controls />
           </div>
         </div>
       </div>

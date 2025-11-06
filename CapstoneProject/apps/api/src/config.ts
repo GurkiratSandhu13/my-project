@@ -61,8 +61,8 @@ export const config = {
     },
     summarizeThreshold: 0.8, // Summarize when 80% of budget used
     rateLimit: {
-      windowMs: 15 * 60 * 1000, // 15 minutes
-      maxRequests: 100,
+      windowMs: 1 * 60 * 1000, // 1 minute (shorter window for testing)
+      maxRequests: 1000, // Much higher limit for development
     },
   },
 };

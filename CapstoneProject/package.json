@@ -1,7 +1,7 @@
 {
-  "name": "mern-ai-chatbot",
+  "name": "beli-ai-chatbot",
   "version": "1.0.0",
-  "description": "MERN AI Chatbot with provider-agnostic backend, SSE streaming, session context + summarization",
+  "description": "Beli — AI Chat Companion for Students. MERN-based chatbot with provider-agnostic backend, session management, and study support features",
   "private": true,
   "workspaces": [
     "apps/*"
