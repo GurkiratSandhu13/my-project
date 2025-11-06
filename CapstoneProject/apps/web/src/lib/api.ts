@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
@@ -13,19 +13,19 @@ export const api = axios.create({
 // Auth API
 export const authApi = {
   register: async (email: string, password: string) => {
-    const res = await api.post('/auth/register', { email, password });
+    const res = await api.post('/api/auth/register', { email, password });
     return res.data;
   },
   login: async (email: string, password: string) => {
-    const res = await api.post('/auth/login', { email, password });
+    const res = await api.post('/api/auth/login', { email, password });
     return res.data;
   },
   logout: async () => {
-    const res = await api.post('/auth/logout');
+    const res = await api.post('/api/auth/logout');
     return res.data;
   },
   me: async () => {
-    const res = await api.get('/auth/me');
+    const res = await api.get('/api/auth/me');
     return res.data;
   },
 };
@@ -40,7 +40,7 @@ export const chatApi = {
     temperature?: number;
     systemPrompt?: string;
   }) => {
-    const res = await api.post('/chat', data);
+    const res = await api.post('/api/chat', data);
     return res.data;
   },
   stream: async (
@@ -55,7 +55,7 @@ export const chatApi = {
     onChunk: (chunk: any) => void
   ) => {
     // Send POST request with SSE streaming
-    const response = await fetch(`${API_BASE_URL}/chat/stream`, {
+    const response = await fetch(`${API_BASE_URL}/api/chat/stream`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -65,8 +65,14 @@ export const chatApi = {
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: 'Unknown error' }));
-      throw new Error(error.error || `HTTP error! status: ${response.status}`);
+      const data = await response.json().catch(() => ({ error: 'Unknown error' }));
+      // Throw an axios-like error shape so callers can check error.response
+      throw {
+        response: {
+          status: response.status,
+          data,
+        },
+      } as any;
     }
 
     const reader = response.body?.getReader();
@@ -77,28 +83,38 @@ export const chatApi = {
     }
 
     let buffer = '';
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
 
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop() || '';
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
 
-      for (const line of lines) {
-        if (line.startsWith('event: ')) {
-          // Skip event line
-          continue;
-        }
-        if (line.startsWith('data: ')) {
-          try {
-            const chunkData = JSON.parse(line.substring(6));
-            onChunk(chunkData);
-          } catch (e) {
-            console.error('Failed to parse SSE data:', e);
+        for (const line of lines) {
+          if (line.startsWith('event: ')) {
+            // Skip event line
+            continue;
+          }
+          if (line.startsWith('data: ')) {
+            try {
+              const chunkData = JSON.parse(line.substring(6));
+              onChunk(chunkData);
+            } catch (e) {
+              console.error('Failed to parse SSE data:', e);
+            }
           }
         }
       }
+    } catch (error) {
+      // Handle stream errors
+      onChunk({
+        type: 'event',
+        name: 'error',
+        data: { message: error instanceof Error ? error.message : 'Stream error' },
+      });
+      throw error;
     }
   },
 };
@@ -106,31 +122,35 @@ export const chatApi = {
 // Sessions API
 export const sessionsApi = {
   list: async () => {
-    const res = await api.get('/sessions');
+    const res = await api.get('/api/sessions');
     return res.data;
   },
   get: async (id: string) => {
-    const res = await api.get(`/sessions/${id}`);
+    const res = await api.get(`/api/sessions/${id}`);
     return res.data;
   },
   create: async (data?: { title?: string; systemPrompt?: string }) => {
-    const res = await api.post('/sessions', data || {});
+    const res = await api.post('/api/sessions', data || {});
     return res.data;
   },
   clear: async (id: string) => {
-    const res = await api.post(`/sessions/${id}/clear`);
+    const res = await api.post(`/api/sessions/${id}/clear`);
     return res.data;
   },
   summarize: async (id: string) => {
-    const res = await api.post(`/sessions/${id}/summarize`);
+    const res = await api.post(`/api/sessions/${id}/summarize`);
+    return res.data;
+  },
+  update: async (id: string, data: { title?: string; systemPrompt?: string; temperature?: number }) => {
+    const res = await api.patch(`/api/sessions/${id}`, data);
     return res.data;
   },
   export: async (id: string) => {
-    const res = await api.get(`/sessions/export/${id}`);
+    const res = await api.get(`/api/sessions/export/${id}`);
     return res.data;
   },
   getMessages: async (sessionId: string) => {
-    const res = await api.get(`/sessions/messages?sessionId=${sessionId}`);
+    const res = await api.get(`/api/sessions/messages?sessionId=${sessionId}`);
     return res.data;
   },
 };
@@ -138,7 +158,7 @@ export const sessionsApi = {
 // Config API
 export const configApi = {
   get: async () => {
-    const res = await api.get('/config');
+    const res = await api.get('/api/config');
     return res.data;
   },
 };
@@ -146,7 +166,7 @@ export const configApi = {
 // Metrics API
 export const metricsApi = {
   get: async () => {
-    const res = await api.get('/metrics');
+    const res = await api.get('/api/metrics');
     return res.data;
   },
 };

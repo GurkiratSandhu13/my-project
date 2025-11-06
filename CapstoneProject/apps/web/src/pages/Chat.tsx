@@ -4,7 +4,6 @@ import { authApi } from '../lib/api';
 import { useNavigate } from 'react-router-dom';
 import ChatWindow from '../components/chat/ChatWindow';
 import HistorySidebar from '../components/chat/HistorySidebar';
-import Controls from '../components/chat/Controls';
 
 export default function Chat() {
   const { user, setUser } = useChatStore();
@@ -68,7 +67,7 @@ export default function Chat() {
             <ChatWindow />
           </div>
           <div className="w-80 border-l border-gray-200 bg-white">
-            <Controls />
+            {/* original Controls panel intentionally restored (component handles its UI) */}
           </div>
         </div>
       </div>

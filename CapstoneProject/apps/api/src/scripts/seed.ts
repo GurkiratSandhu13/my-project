@@ -3,7 +3,7 @@ import { connectMongo, disconnectMongo } from '../db/mongo.js';
 import { User } from '../db/models/User.js';
 import { Session } from '../db/models/Session.js';
 import { Message } from '../db/models/Message.js';
-import { generateUserId, generateSessionId, generateMessageId } from '../services/ids.js';
+import { /* generateUserId, generateSessionId, generateMessageId */ } from '../services/ids.js';
 import bcrypt from 'bcryptjs';
 
 dotenv.config();
@@ -20,7 +20,6 @@ async function seed() {
     if (!user) {
       const hash = await bcrypt.hash(demoPassword, 10);
       user = new User({
-        _id: generateUserId(),
         email: demoEmail,
         hash,
         role: 'user',
@@ -35,7 +34,6 @@ async function seed() {
     let session = await Session.findOne({ userId: user._id });
     if (!session) {
       session = new Session({
-        _id: generateSessionId(),
         userId: user._id,
         title: 'Welcome Chat',
         tokenBudget: {
@@ -71,7 +69,6 @@ async function seed() {
       });
       if (!existing) {
         const message = new Message({
-          _id: generateMessageId(),
           sessionId: session._id,
           role: msg.role,
           content: msg.content,

@@ -27,7 +27,7 @@ export const useChatStore = create<ChatState>()(
     (set) => ({
       user: null,
       currentSessionId: null,
-      provider: 'gemini',
+      provider: 'mock',
       model: '',
       temperature: 0.7,
       systemPrompt: '',

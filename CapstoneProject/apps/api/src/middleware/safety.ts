@@ -70,7 +70,7 @@ export const chatRequestSchema = z.object({
 export const sessionSchema = z.object({
   title: z.string().min(1).max(200).optional(),
   systemPrompt: z.string().max(5000).optional(),
-});
+}).passthrough(); // Allow empty body
 
 export function validateBody(schema: z.ZodSchema) {
   return (req: Request, res: Response, next: NextFunction): void => {

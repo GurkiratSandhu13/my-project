@@ -39,6 +39,10 @@ const sessionSchema = new Schema<ISession>(
     summary: {
       type: String,
     },
+    temperature: {
+      type: Number,
+      default: 0.7,
+    },
     tokenBudget: {
       max: {
         type: Number,

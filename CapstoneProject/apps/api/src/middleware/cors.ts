@@ -6,5 +6,7 @@ export const corsMiddleware = cors({
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token'],
+  exposedHeaders: ['Set-Cookie'],
+  optionsSuccessStatus: 204,
 });
 

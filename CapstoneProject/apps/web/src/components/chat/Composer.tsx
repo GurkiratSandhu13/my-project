@@ -25,6 +25,15 @@ export default function Composer() {
     setStreaming(true);
     setStreamedContent('');
 
+    let streamEnded = false;
+    const clearSendingState = () => {
+      if (!streamEnded) {
+        streamEnded = true;
+        setStreaming(false);
+        setLoading(false);
+      }
+    };
+
     try {
       await chatApi.stream(
         {
@@ -39,20 +48,42 @@ export default function Composer() {
           if (chunk.type === 'text') {
             setStreamedContent((prev) => prev + chunk.delta);
           } else if (chunk.type === 'event' && chunk.name === 'end') {
-            setStreaming(false);
-            // Reload messages
-            window.location.reload();
+            clearSendingState();
+            // Reload messages by triggering a window event
+            window.dispatchEvent(new Event('messages-updated'));
           } else if (chunk.type === 'event' && chunk.name === 'error') {
-            setStreaming(false);
-            alert('Error: ' + (chunk.data?.message || 'Unknown error'));
+            clearSendingState();
+            const errorMsg = chunk.data?.message || chunk.error || 'Unknown error';
+            alert('Error: ' + errorMsg);
           }
         }
       );
+      // Stream completed successfully - ensure state is cleared
+      clearSendingState();
+      // Refetch messages to ensure UI is updated
+      window.dispatchEvent(new Event('messages-updated'));
     } catch (error: any) {
-      setStreaming(false);
-      alert('Failed to send message: ' + (error.message || 'Unknown error'));
+      // Always clear sending state, no matter what error occurred
+      clearSendingState();
+      
+      // Handle provider config errors
+      if (error?.response?.status === 400 && error?.response?.data?.code === 'PROVIDER_NOT_CONFIGURED') {
+        const msg = error.response.data.message || `Set ${error.response.data.provider?.toUpperCase()}_API_KEY in backend .env`;
+        alert(`Provider not configured: ${msg}`);
+        return;
+      }
+      
+      // Handle network/connection errors
+      if (!error.response && error.message) {
+        alert('Connection error: ' + error.message + '. Make sure the backend is running.');
+        return;
+      }
+      
+      const errorMessage = error?.response?.data?.error || error?.response?.data?.message || error?.message || 'Failed to send message';
+      alert('Error: ' + errorMessage);
     } finally {
-      setLoading(false);
+      // Extra safety: always clear state in finally block
+      clearSendingState();
     }
   };
 

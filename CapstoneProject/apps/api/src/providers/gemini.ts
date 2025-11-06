@@ -1,18 +1,19 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI } from '@google/genai';
 import type { BaseProvider, ChatRequest, ChatResponse, StreamChunk } from './base.js';
 import { config } from '../config.js';
 import { generateId } from '../services/ids.js';
 import { logger } from '../utils/logger.js';
 
 export class GeminiProvider implements BaseProvider {
-  private client: GoogleGenerativeAI | null = null;
+  private client: GoogleGenAI | null = null;
   private enabled: boolean;
 
   constructor() {
     this.enabled = config.providers.gemini.enabled;
     if (this.enabled && config.providers.gemini.apiKey) {
       try {
-        this.client = new GoogleGenerativeAI(config.providers.gemini.apiKey);
+        // New Google GenAI client (reads GEMINI_API_KEY from env if not provided)
+        this.client = new GoogleGenAI({ apiKey: config.providers.gemini.apiKey });
       } catch (error) {
         logger.error({ error }, 'Failed to initialize Gemini client');
         this.enabled = false;
@@ -37,87 +38,58 @@ export class GeminiProvider implements BaseProvider {
       throw new Error('Gemini provider is not enabled. Set GEMINI_API_KEY in .env');
     }
 
-    const { messages, model = 'gemini-pro', temperature = 0.7, timeoutMs = 30000 } = req;
+    const { messages, model = 'gemini-2.5-flash', temperature = 0.7 } = req;
+
+    // Normalize deprecated model names
+    const effectiveModel = ['gemini-pro', 'gemini-1.5-flash'].includes(model) ? 'gemini-2.5-flash' : model;
 
     try {
-      // Convert messages to Gemini format
-      const geminiModel = this.client.getGenerativeModel({ model });
-      
-      // Separate system prompt if present
+      // Compose a simple prompt text including optional system prompt and history
       const systemPrompt = messages.find((m) => m.role === 'system')?.content;
-      const chatMessages = messages
-        .filter((m) => m.role !== 'system')
-        .map((m) => ({
-          role: m.role === 'user' ? 'user' : 'model',
-          parts: [{ text: m.content }],
-        }));
+      const history = messages.filter((m) => m.role !== 'system');
+      const prompt = [
+        systemPrompt ? `System: ${systemPrompt}` : null,
+        ...history.map((m) => `${m.role === 'assistant' ? 'Assistant' : 'User'}: ${m.content}`),
+      ]
+        .filter(Boolean)
+        .join('\n');
 
-      const chat = geminiModel.startChat({
-        history: chatMessages.slice(0, -1).map((m) => ({
-          role: m.role,
-          parts: m.parts,
-        })),
-        generationConfig: {
-          temperature,
-        },
-        systemInstruction: systemPrompt,
-      });
-
-      const lastMessage = chatMessages[chatMessages.length - 1];
-      
       if (onStream) {
+        // Synthesize streaming: start -> full text -> end
         onStream({ type: 'event', name: 'start' });
-        
-        let fullText = '';
-        const result = await chat.sendMessageStream(lastMessage.parts);
-        
-        for await (const chunk of result.stream) {
-          const text = chunk.text();
-          if (text) {
-            fullText += text;
-            onStream({ type: 'text', delta: text });
-          }
+        const response = await this.client.models.generateContent({
+          model: effectiveModel,
+          contents: prompt,
+          generationConfig: { temperature },
+        });
+        const text = (response as any).text || (response as any).output_text || '';
+        if (text) {
+          onStream({ type: 'text', delta: text });
         }
-        
         onStream({ type: 'event', name: 'end' });
-        
-        const usage = await result.response.usageMetadata();
-        
+
         return {
           id: generateId('gemini'),
           provider: 'gemini',
-          model,
-          usage: {
-            inputTokens: usage?.promptTokenCount,
-            outputTokens: usage?.candidatesTokenCount,
-          },
-          message: {
-            role: 'assistant',
-            content: fullText,
-          },
+          model: effectiveModel,
+          message: { role: 'assistant', content: text },
         };
       } else {
-        const result = await chat.sendMessage(lastMessage.parts);
-        const response = await result.response;
-        const text = response.text();
-        const usage = response.usageMetadata();
-        
+        const response = await this.client.models.generateContent({
+          model: effectiveModel,
+          contents: prompt,
+          generationConfig: { temperature },
+        });
+        const text = (response as any).text || (response as any).output_text || '';
         return {
           id: generateId('gemini'),
           provider: 'gemini',
-          model,
-          usage: {
-            inputTokens: usage?.promptTokenCount,
-            outputTokens: usage?.candidatesTokenCount,
-          },
-          message: {
-            role: 'assistant',
-            content: text,
-          },
+          model: effectiveModel,
+          message: { role: 'assistant', content: text },
         };
       }
     } catch (error) {
-      logger.error({ error, model }, 'Gemini chat error');
+      logger.error({ error, model: effectiveModel }, 'Gemini chat error');
       throw new Error(`Gemini API error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }

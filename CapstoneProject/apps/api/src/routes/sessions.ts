@@ -1,4 +1,5 @@
 import { Router, Response, Request } from 'express';
+import mongoose from 'mongoose';
 import { Session, Message } from '../db/models/index.js';
 import { authenticate, type AuthRequest } from '../middleware/auth.js';
 import { validateBody, sessionSchema } from '../middleware/safety.js';
@@ -10,6 +11,39 @@ import { estimateTokens } from '../utils/tokens.js';
 import { getDefaultProvider } from '../providers/index.js';
 
 const router = Router();
+
+// Shared messages handler (used by both routes)
+export const getMessagesHandler = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.userId!;
+    // Support both query param and path param
+    const sessionId = (req.query.sessionId as string) || (req.params.id as string);
+
+    if (!sessionId || typeof sessionId !== 'string') {
+      res.status(400).json({ error: 'sessionId required' });
+      return;
+    }
+
+    // Validate ObjectId format
+    if (!mongoose.Types.ObjectId.isValid(sessionId)) {
+      res.status(400).json({ error: 'Invalid sessionId format' });
+      return;
+    }
+
+    // Verify session belongs to user
+    const session = await Session.findById(sessionId);
+    if (!session || session.userId !== userId) {
+      res.status(404).json({ error: 'Session not found' });
+      return;
+    }
+
+    const messages = await Message.find({ sessionId }).sort({ createdAt: 1 });
+    res.json({ messages });
+  } catch (error) {
+    logger.error({ error }, 'Get messages error');
+    res.status(500).json({ error: 'Failed to get messages' });
+  }
+};
 
 // GET /api/sessions
 router.get('/', authenticate, async (req: AuthRequest, res: Response) => {
@@ -34,10 +68,15 @@ router.post(
   async (req: AuthRequest, res: Response) => {
     try {
       const userId = req.userId!;
+      if (!userId) {
+        res.status(401).json({ error: 'Authentication required' });
+        return;
+      }
+
       const { title, systemPrompt } = req.body;
 
       const session = new Session({
-        _id: generateSessionId(),
+        // Let Mongoose auto-generate ObjectId for _id
         userId,
         title: title || 'New Chat',
         systemPrompt,
@@ -51,11 +90,58 @@ router.post(
       await session.save();
       res.status(201).json(session);
     } catch (error) {
-      logger.error({ error }, 'Create session error');
-      res.status(500).json({ error: 'Failed to create session' });
+      logger.error({ error, stack: error instanceof Error ? error.stack : undefined }, 'Create session error');
+      if (error instanceof Error && error.message.includes('validation')) {
+        res.status(400).json({ 
+          error: 'Validation failed',
+          message: error.message,
+        });
+        return;
+      }
+      res.status(500).json({ 
+        error: 'Failed to create session',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      });
     }
   }
 );
+
+// GET /api/sessions/messages?sessionId=...
+// MUST be defined before /:id to avoid route collision
+router.get('/messages', authenticate, getMessagesHandler);
+
+// GET /api/sessions/:id/messages (alias)
+router.get('/:id/messages', authenticate, getMessagesHandler);
+
+// PATCH /api/sessions/:id  (update title/systemPrompt/temperature)
+router.patch('/:id', authenticate, async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.userId!;
+    const session = await Session.findById(req.params.id);
+
+    if (!session || session.userId !== userId) {
+      res.status(404).json({ error: 'Session not found' });
+      return;
+    }
+
+    const { title, systemPrompt, temperature } = req.body || {};
+    if (typeof title === 'string' && title.trim().length > 0) {
+      session.title = title.trim();
+    }
+    if (typeof systemPrompt === 'string') {
+      session.systemPrompt = systemPrompt;
+    }
+    if (typeof temperature === 'number') {
+      session.temperature = Math.min(2, Math.max(0, temperature));
+    }
+
+    await session.save();
+    res.json(session);
+  } catch (error) {
+    logger.error({ error }, 'Update session error');
+    res.status(500).json({ error: 'Failed to update session' });
+  }
+});
 
 // GET /api/sessions/:id
 router.get('/:id', authenticate, async (req: AuthRequest, res: Response) => {
@@ -149,32 +235,6 @@ router.post('/:id/summarize', authenticate, async (req: AuthRequest, res: Respon
   } catch (error) {
     logger.error({ error }, 'Summarize session error');
     res.status(500).json({ error: 'Failed to summarize session' });
-  }
-});
-
-// GET /api/messages?sessionId=...
-router.get('/messages', authenticate, async (req: AuthRequest, res: Response) => {
-  try {
-    const userId = req.userId!;
-    const { sessionId } = req.query;
-
-    if (!sessionId) {
-      res.status(400).json({ error: 'sessionId required' });
-      return;
-    }
-
-    // Verify session belongs to user
-    const session = await Session.findById(sessionId);
-    if (!session || session.userId !== userId) {
-      res.status(404).json({ error: 'Session not found' });
-      return;
-    }
-
-    const messages = await Message.find({ sessionId }).sort({ createdAt: 1 });
-    res.json(messages);
-  } catch (error) {
-    logger.error({ error }, 'Get messages error');
-    res.status(500).json({ error: 'Failed to get messages' });
   }
 });
 

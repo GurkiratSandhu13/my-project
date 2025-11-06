@@ -27,15 +27,31 @@ export default function MessageList() {
       setLoading(true);
       try {
         const data = await sessionsApi.getMessages(currentSessionId);
-        setMessages(data);
-      } catch (error) {
+        // Handle both formats: { messages: [...] } or [...]
+        setMessages(Array.isArray(data) ? data : (data.messages || []));
+      } catch (error: any) {
         console.error('Failed to load messages:', error);
+        const errorMessage = error?.response?.data?.error || error?.response?.data?.message || 'Failed to load messages';
+        // Only show error if it's not a 404 (no messages yet)
+        if (error?.response?.status !== 404) {
+          alert(`Error loading messages: ${errorMessage}`);
+        }
       } finally {
         setLoading(false);
       }
     };
 
     loadMessages();
+
+    // Listen for messages-updated event
+    const handleMessagesUpdate = () => {
+      loadMessages();
+    };
+    window.addEventListener('messages-updated', handleMessagesUpdate);
+    
+    return () => {
+      window.removeEventListener('messages-updated', handleMessagesUpdate);
+    };
   }, [currentSessionId]);
 
   useEffect(() => {
@@ -54,8 +70,7 @@ export default function MessageList() {
     return (
       <div className="flex-1 flex items-center justify-center text-gray-500">
         <div className="text-center">
-          <p className="text-lg mb-2">No messages yet</p>
-          <p className="text-sm">Start a conversation below</p>
+          <p className="text-sm text-gray-600">Say hi 👋 — Beli’s here to help with study plans, summaries, and friendly chats.</p>
         </div>
       </div>
     );

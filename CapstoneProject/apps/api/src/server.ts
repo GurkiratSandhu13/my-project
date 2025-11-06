@@ -16,7 +16,6 @@ import chatRoutes from './routes/chat.js';
 import sessionsRoutes from './routes/sessions.js';
 import metricsRoutes from './routes/metrics.js';
 import configRoutes from './routes/config.js';
-
 export async function createServer() {
   const app = express();
 
@@ -44,7 +43,7 @@ export async function createServer() {
   app.use('/api/chat', validateInput);
 
   // Health check
-  app.get('/health', (req, res) => {
+  app.get('/__health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
   });
 
