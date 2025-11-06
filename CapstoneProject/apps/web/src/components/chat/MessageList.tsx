@@ -27,8 +27,7 @@ export default function MessageList() {
       setLoading(true);
       try {
         const data = await sessionsApi.getMessages(currentSessionId);
-        // Handle both formats: { messages: [...] } or [...]
-        setMessages(Array.isArray(data) ? data : (data.messages || []));
+        setMessages(data);
       } catch (error: any) {
         console.error('Failed to load messages:', error);
         const errorMessage = error?.response?.data?.error || error?.response?.data?.message || 'Failed to load messages';
@@ -70,7 +69,8 @@ export default function MessageList() {
     return (
       <div className="flex-1 flex items-center justify-center text-gray-500">
         <div className="text-center">
-          <p className="text-sm text-gray-600">Say hi 👋 — Beli’s here to help with study plans, summaries, and friendly chats.</p>
+          <p className="text-lg mb-2">No messages yet</p>
+          <p className="text-sm">Start a conversation below</p>
         </div>
       </div>
     );

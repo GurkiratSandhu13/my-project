@@ -6,6 +6,7 @@ import { validateBody, chatRequestSchema } from '../middleware/safety.js';
 import { SSESender } from '../utils/sse.js';
 import { countMessageTokens, estimateTokens } from '../utils/tokens.js';
 import { recordRequest, recordError } from '../services/usage.js';
+import { generateMessageId } from '../services/ids.js';
 import { logger } from '../utils/logger.js';
 import { summarizeConversation } from '../services/summarize.js';
 import { config } from '../config.js';
@@ -41,12 +42,7 @@ router.post(
       const provider = providerName ? getProvider(providerName) : getDefaultProvider();
       if (!provider || !provider.isEnabled()) {
         res.status(400).json({
-          code: 'PROVIDER_NOT_CONFIGURED',
-          provider: providerName ?? 'default',
           error: `Provider ${providerName ?? 'default'} is not enabled`,
-          message: providerName 
-            ? `Set ${providerName.toUpperCase()}_API_KEY in backend .env`
-            : 'Set GEMINI_API_KEY (or OPENAI_API_KEY) in backend .env',
         });
         return;
       }
@@ -106,6 +102,7 @@ router.post(
 
       // Save messages
       const userMessage = new Message({
+        _id: generateMessageId(),
         sessionId,
         role: 'user',
         content,
@@ -114,6 +111,7 @@ router.post(
       await userMessage.save();
 
       const assistantMessage = new Message({
+        _id: generateMessageId(),
         sessionId,
         role: 'assistant',
         content: response.message?.content ?? '',
@@ -156,7 +154,6 @@ router.post(
   async (req: AuthRequest, res: Response) => {
     const startTime = Date.now();
     let fullResponse = '';
-    let sse: SSESender | null = null;
 
     try {
       const { sessionId, content, provider: providerName, model, temperature, systemPrompt } =
@@ -180,18 +177,13 @@ router.post(
       const provider = providerName ? getProvider(providerName) : getDefaultProvider();
       if (!provider || !provider.isEnabled()) {
         res.status(400).json({
-          code: 'PROVIDER_NOT_CONFIGURED',
-          provider: providerName ?? 'default',
           error: `Provider ${providerName ?? 'default'} is not enabled`,
-          message: providerName 
-            ? `Set ${providerName.toUpperCase()}_API_KEY in backend .env`
-            : 'Set GEMINI_API_KEY (or OPENAI_API_KEY) in backend .env',
         });
         return;
       }
 
-      // Setup SSE (establish headers early so client starts reading)
-      sse = new SSESender(res);
+      // Setup SSE
+      const sse = new SSESender(res);
 
       // Get messages
       const messages = await Message.find({ sessionId }).sort({ createdAt: 1 });
@@ -263,6 +255,7 @@ router.post(
 
       // Save messages
       const userMessage = new Message({
+        _id: generateMessageId(),
         sessionId,
         role: 'user',
         content,
@@ -271,6 +264,7 @@ router.post(
       await userMessage.save();
 
       const assistantMessage = new Message({
+        _id: generateMessageId(),
         sessionId,
         role: 'assistant',
         content: fullResponse,
@@ -292,32 +286,13 @@ router.post(
       const latency = Date.now() - startTime;
       recordRequest(latency, usage.inputTokens ?? 0, usage.outputTokens ?? 0);
 
-      // Signal end of stream to client, then close SSE
-      sse.sendChunk({ type: 'event', name: 'end', data: {} });
+      // Close SSE
       sse.close();
     } catch (error) {
       recordError();
       logger.error({ error }, 'Chat stream error');
-      
-      // If SSE was established, send an error event and close to avoid hanging clients
-      if (sse) {
-        try {
-          sse.sendChunk({
-            type: 'event',
-            name: 'error',
-            data: { message: error instanceof Error ? error.message : 'Unknown error' },
-          });
-          sse.close();
-        } catch (sseError) {
-          // If sending over SSE failed, ensure connection is closed
-          try { sse.close(); } catch {}
-        }
-      } else if (!res.headersSent) {
-        // SSE not started yet - return JSON error
-        res.status(500).json({ 
-          error: 'Chat stream failed', 
-          message: error instanceof Error ? error.message : 'Unknown error' 
-        });
+      if (!res.headersSent) {
+        res.status(500).json({ error: 'Chat stream failed', message: error instanceof Error ? error.message : 'Unknown error' });
       }
     }
   }

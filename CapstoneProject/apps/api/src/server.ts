@@ -16,12 +16,18 @@ import chatRoutes from './routes/chat.js';
 import sessionsRoutes from './routes/sessions.js';
 import metricsRoutes from './routes/metrics.js';
 import configRoutes from './routes/config.js';
+import messagesRoutes from './routes/messages.js';
+
 export async function createServer() {
   const app = express();
 
-  // Security middleware
-  app.use(helmet());
+  // CORS must come before Helmet to prevent CORS headers from being stripped
   app.use(corsMiddleware);
+  
+  // Security middleware
+  app.use(helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+  }));
 
   // Body parsing
   app.use(express.json({ limit: '10mb' }));
@@ -42,15 +48,45 @@ export async function createServer() {
   // Safety validation
   app.use('/api/chat', validateInput);
 
-  // Health check
+  // Health check (temporary diagnostics)
   app.get('/__health', (req, res) => {
-    res.json({ status: 'ok', timestamp: new Date().toISOString() });
+    res.json({
+      ok: true,
+      time: new Date().toISOString(),
+      userRequiredPaths: ['/api/sessions', '/api/messages', '/api/chat', '/api/config'],
+    });
   });
+
+  // Route manifest (dev only)
+  if (config.env !== 'production') {
+    app.get('/__routes', (req, res) => {
+      // Collect known mounted routes
+      const routes: Array<{ method: string; path: string }> = [];
+      const collectRoutes = (router: any, prefix: string) => {
+        try {
+          router.stack?.forEach((layer: any) => {
+            if (layer.route) {
+              const methods = Object.keys(layer.route.methods).map((m) => m.toUpperCase());
+              methods.forEach((method) => routes.push({ method, path: prefix + layer.route.path }));
+            }
+          });
+        } catch {}
+      };
+      collectRoutes(authRoutes, '/api/auth');
+      collectRoutes(chatRoutes, '/api/chat');
+      collectRoutes(sessionsRoutes, '/api/sessions');
+      collectRoutes(messagesRoutes, '/api/messages');
+      collectRoutes(metricsRoutes, '/api/metrics');
+      collectRoutes(configRoutes, '/api/config');
+      res.json({ routes: routes.sort((a, b) => a.path.localeCompare(b.path)) });
+    });
+  }
 
   // API routes
   app.use('/api/auth', authRoutes);
   app.use('/api/chat', chatRoutes);
   app.use('/api/sessions', sessionsRoutes);
+  app.use('/api/messages', messagesRoutes);
   app.use('/api/metrics', metricsRoutes);
   app.use('/api/config', configRoutes);
 

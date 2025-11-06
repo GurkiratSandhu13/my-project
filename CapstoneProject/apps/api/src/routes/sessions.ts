@@ -12,37 +12,12 @@ import { getDefaultProvider } from '../providers/index.js';
 
 const router = Router();
 
-// Shared messages handler (used by both routes)
-export const getMessagesHandler = async (req: AuthRequest, res: Response) => {
-  try {
-    const userId = req.userId!;
-    // Support both query param and path param
-    const sessionId = (req.query.sessionId as string) || (req.params.id as string);
-
-    if (!sessionId || typeof sessionId !== 'string') {
-      res.status(400).json({ error: 'sessionId required' });
-      return;
-    }
-
-    // Validate ObjectId format
-    if (!mongoose.Types.ObjectId.isValid(sessionId)) {
-      res.status(400).json({ error: 'Invalid sessionId format' });
-      return;
-    }
-
-    // Verify session belongs to user
-    const session = await Session.findById(sessionId);
-    if (!session || session.userId !== userId) {
-      res.status(404).json({ error: 'Session not found' });
-      return;
-    }
-
-    const messages = await Message.find({ sessionId }).sort({ createdAt: 1 });
-    res.json({ messages });
-  } catch (error) {
-    logger.error({ error }, 'Get messages error');
-    res.status(500).json({ error: 'Failed to get messages' });
-  }
+// Helpers
+const DEFAULT_MODELS: Record<string, string> = {
+  gemini: 'gemini-2.5-flash',
+  openai: 'gpt-3.5-turbo',
+  dialogflow: 'dialogflow-default',
+  mock: 'mock-model',
 };
 
 // GET /api/sessions
@@ -53,7 +28,7 @@ router.get('/', authenticate, async (req: AuthRequest, res: Response) => {
       .sort({ lastActivityAt: -1 })
       .limit(100);
 
-    res.json(sessions);
+    res.json({ sessions });
   } catch (error) {
     logger.error({ error }, 'Get sessions error');
     res.status(500).json({ error: 'Failed to get sessions' });
@@ -75,20 +50,27 @@ router.post(
 
       const { title, systemPrompt } = req.body;
 
+      // Defaults from provider registry
+      const provider = (getDefaultProvider().name?.() as any) ?? 'mock';
+      const model = DEFAULT_MODELS[provider] ?? 'mock-model';
+
       const session = new Session({
         // Let Mongoose auto-generate ObjectId for _id
         userId,
         title: title || 'New Chat',
         systemPrompt,
+        provider,
+        model,
         tokenBudget: {
           max: config.limits.tokenBudget.default,
           used: 0,
         },
         expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+        lastActivityAt: new Date(),
       });
 
       await session.save();
-      res.status(201).json(session);
+      res.status(201).json({ session });
     } catch (error) {
       logger.error({ error, stack: error instanceof Error ? error.stack : undefined }, 'Create session error');
       if (error instanceof Error && error.message.includes('validation')) {
@@ -106,43 +88,6 @@ router.post(
   }
 );
 
-// GET /api/sessions/messages?sessionId=...
-// MUST be defined before /:id to avoid route collision
-router.get('/messages', authenticate, getMessagesHandler);
-
-// GET /api/sessions/:id/messages (alias)
-router.get('/:id/messages', authenticate, getMessagesHandler);
-
-// PATCH /api/sessions/:id  (update title/systemPrompt/temperature)
-router.patch('/:id', authenticate, async (req: AuthRequest, res: Response) => {
-  try {
-    const userId = req.userId!;
-    const session = await Session.findById(req.params.id);
-
-    if (!session || session.userId !== userId) {
-      res.status(404).json({ error: 'Session not found' });
-      return;
-    }
-
-    const { title, systemPrompt, temperature } = req.body || {};
-    if (typeof title === 'string' && title.trim().length > 0) {
-      session.title = title.trim();
-    }
-    if (typeof systemPrompt === 'string') {
-      session.systemPrompt = systemPrompt;
-    }
-    if (typeof temperature === 'number') {
-      session.temperature = Math.min(2, Math.max(0, temperature));
-    }
-
-    await session.save();
-    res.json(session);
-  } catch (error) {
-    logger.error({ error }, 'Update session error');
-    res.status(500).json({ error: 'Failed to update session' });
-  }
-});
-
 // GET /api/sessions/:id
 router.get('/:id', authenticate, async (req: AuthRequest, res: Response) => {
   try {
@@ -150,14 +95,73 @@ router.get('/:id', authenticate, async (req: AuthRequest, res: Response) => {
     const session = await Session.findById(req.params.id);
 
     if (!session || session.userId !== userId) {
-      res.status(404).json({ error: 'Session not found' });
+      res.status(404).json({ error: 'SESSION_NOT_FOUND' });
       return;
     }
 
-    res.json(session);
+    res.json({ session });
   } catch (error) {
     logger.error({ error }, 'Get session error');
     res.status(500).json({ error: 'Failed to get session' });
+  }
+});
+
+// PATCH /api/sessions/:id
+router.patch('/:id', authenticate, async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.userId!;
+    const { title, provider, model, temperature, systemPrompt } = req.body || {};
+
+    const session = await Session.findById(req.params.id);
+    if (!session || session.userId !== userId) {
+      res.status(404).json({ error: 'SESSION_NOT_FOUND' });
+      return;
+    }
+
+    // Validate provider/model if provided
+    if (provider !== undefined) {
+      const allowedProviders = ['gemini', 'openai', 'dialogflow', 'mock'];
+      if (!allowedProviders.includes(provider)) {
+        res.status(400).json({ code: 'INVALID_PROVIDER', message: `Unknown provider: ${provider}` });
+        return;
+      }
+      // provider enabled?
+      const pEnabled = getDefaultProvider().name && allowedProviders.includes(provider);
+      // Minimal: if provider is not default and likely disabled, still accept mock; otherwise check env via config route in UI
+      session.provider = provider as any;
+      if (!model) {
+        session.model = DEFAULT_MODELS[provider] ?? session.model;
+      }
+    }
+
+    if (model !== undefined) {
+      const prov = (provider as string) || (session.provider as string) || 'mock';
+      const allowedModel = DEFAULT_MODELS[prov];
+      if (allowedModel && model !== allowedModel) {
+        // Allow custom models but flag obvious mismatch
+        // Minimal validation: accept any string; front-end ensures options
+      }
+      session.model = model;
+    }
+
+    if (typeof temperature === 'number') {
+      session.temperature = Math.max(0, Math.min(1.5, temperature));
+    }
+
+    if (typeof title === 'string') {
+      session.title = title.trim() || session.title;
+    }
+
+    if (typeof systemPrompt === 'string') {
+      session.systemPrompt = systemPrompt;
+    }
+
+    session.lastActivityAt = new Date();
+    await session.save();
+    res.json({ session });
+  } catch (error) {
+    logger.error({ error }, 'Update session error');
+    res.status(500).json({ error: 'Failed to update session' });
   }
 });
 
@@ -235,6 +239,37 @@ router.post('/:id/summarize', authenticate, async (req: AuthRequest, res: Respon
   } catch (error) {
     logger.error({ error }, 'Summarize session error');
     res.status(500).json({ error: 'Failed to summarize session' });
+  }
+});
+
+// GET /api/messages?sessionId=...
+router.get('/messages', authenticate, async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.userId!;
+    const { sessionId } = req.query;
+
+    if (!sessionId || typeof sessionId !== 'string') {
+      res.status(400).json({ error: 'sessionId required' });
+      return;
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(sessionId)) {
+      res.status(400).json({ error: 'Invalid sessionId format' });
+      return;
+    }
+
+    // Verify session belongs to user
+    const session = await Session.findById(sessionId);
+    if (!session || session.userId !== userId) {
+      res.status(404).json({ error: 'Session not found' });
+      return;
+    }
+
+    const messages = await Message.find({ sessionId }).sort({ createdAt: 1 });
+    res.json({ messages });
+  } catch (error) {
+    logger.error({ error }, 'Get messages error');
+    res.status(500).json({ error: 'Failed to get messages' });
   }
 });
 

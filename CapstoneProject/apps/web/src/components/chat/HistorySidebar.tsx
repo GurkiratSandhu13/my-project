@@ -94,6 +94,14 @@ export default function HistorySidebar({ onClose }: { onClose: () => void }) {
     try {
       const session = await sessionsApi.create();
       setCurrentSession(session._id);
+      // Sync defaults after creation
+      try {
+        const full = await sessionsApi.get(session._id);
+        // Safely update local store via a shallow import to avoid circular
+        const { setModel, setTemperature } = useChatStore.getState();
+        if (typeof full.temperature === 'number') setTemperature(full.temperature);
+        if (typeof full.model === 'string') setModel(full.model);
+      } catch {}
       await loadSessions();
     } catch (error: any) {
       console.error('Failed to create session:', error);
@@ -104,6 +112,15 @@ export default function HistorySidebar({ onClose }: { onClose: () => void }) {
 
   const handleSelectSession = (sessionId: string) => {
     setCurrentSession(sessionId);
+    // Load session details and sync fields
+    sessionsApi
+      .get(sessionId)
+      .then((full) => {
+        const { setModel, setTemperature } = useChatStore.getState();
+        if (typeof full.temperature === 'number') setTemperature(full.temperature);
+        if (typeof full.model === 'string') setModel(full.model);
+      })
+      .catch(() => {});
   };
 
   return (

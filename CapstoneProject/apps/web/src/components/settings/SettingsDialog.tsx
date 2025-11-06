@@ -41,7 +41,7 @@ export default function SettingsDialog({ onClose }: { onClose: () => void }) {
             <input
               type="range"
               min={0}
-              max={2}
+              max={1.5}
               step={0.1}
               value={temperature}
               onChange={(e) => setTemperature(parseFloat(e.target.value))}

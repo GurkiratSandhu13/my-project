@@ -6,6 +6,8 @@ export interface ISession extends Document {
   status: 'active' | 'expired';
   title: string;
   systemPrompt?: string;
+  model?: string;
+  provider?: 'gemini' | 'openai' | 'dialogflow' | 'mock';
   summary?: string;
   tokenBudget: {
     max: number;
@@ -35,6 +37,13 @@ const sessionSchema = new Schema<ISession>(
     },
     systemPrompt: {
       type: String,
+    },
+    model: {
+      type: String,
+    },
+    provider: {
+      type: String,
+      enum: ['gemini', 'openai', 'dialogflow', 'mock'],
     },
     summary: {
       type: String,

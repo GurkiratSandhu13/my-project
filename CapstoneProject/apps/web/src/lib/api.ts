@@ -65,14 +65,8 @@ export const chatApi = {
     });
 
     if (!response.ok) {
-      const data = await response.json().catch(() => ({ error: 'Unknown error' }));
-      // Throw an axios-like error shape so callers can check error.response
-      throw {
-        response: {
-          status: response.status,
-          data,
-        },
-      } as any;
+      const error = await response.json().catch(() => ({ error: 'Unknown error' }));
+      throw new Error(error.error || `HTTP error! status: ${response.status}`);
     }
 
     const reader = response.body?.getReader();
@@ -83,38 +77,28 @@ export const chatApi = {
     }
 
     let buffer = '';
-    try {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
 
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
 
-        for (const line of lines) {
-          if (line.startsWith('event: ')) {
-            // Skip event line
-            continue;
-          }
-          if (line.startsWith('data: ')) {
-            try {
-              const chunkData = JSON.parse(line.substring(6));
-              onChunk(chunkData);
-            } catch (e) {
-              console.error('Failed to parse SSE data:', e);
-            }
+      for (const line of lines) {
+        if (line.startsWith('event: ')) {
+          // Skip event line
+          continue;
+        }
+        if (line.startsWith('data: ')) {
+          try {
+            const chunkData = JSON.parse(line.substring(6));
+            onChunk(chunkData);
+          } catch (e) {
+            console.error('Failed to parse SSE data:', e);
           }
         }
       }
-    } catch (error) {
-      // Handle stream errors
-      onChunk({
-        type: 'event',
-        name: 'error',
-        data: { message: error instanceof Error ? error.message : 'Stream error' },
-      });
-      throw error;
     }
   },
 };
@@ -141,16 +125,16 @@ export const sessionsApi = {
     const res = await api.post(`/api/sessions/${id}/summarize`);
     return res.data;
   },
-  update: async (id: string, data: { title?: string; systemPrompt?: string; temperature?: number }) => {
-    const res = await api.patch(`/api/sessions/${id}`, data);
-    return res.data;
-  },
   export: async (id: string) => {
     const res = await api.get(`/api/sessions/export/${id}`);
     return res.data;
   },
   getMessages: async (sessionId: string) => {
     const res = await api.get(`/api/sessions/messages?sessionId=${sessionId}`);
+    return res.data;
+  },
+  update: async (id: string, data: Partial<{ title: string; systemPrompt: string; temperature: number; model: string }>) => {
+    const res = await api.patch(`/api/sessions/${id}`, data);
     return res.data;
   },
 };

@@ -4,6 +4,7 @@ import { authApi } from '../lib/api';
 import { useNavigate } from 'react-router-dom';
 import ChatWindow from '../components/chat/ChatWindow';
 import HistorySidebar from '../components/chat/HistorySidebar';
+import ModelSelector from '../components/chat/ModelSelector';
 
 export default function Chat() {
   const { user, setUser } = useChatStore();
@@ -51,6 +52,7 @@ export default function Chat() {
               </svg>
             </button>
             <h1 className="text-xl font-semibold">MERN AI Chatbot</h1>
+            <div className="ml-4"><ModelSelector /></div>
           </div>
           <div className="flex items-center gap-4">
             <span className="text-sm text-gray-600">{user.email}</span>
