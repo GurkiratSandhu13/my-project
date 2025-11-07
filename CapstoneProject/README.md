@@ -1,353 +1,264 @@
-# MERN AI Chatbot
+# 📘 **Documentation**
 
-A full-stack MERN application with AI chatbot capabilities, provider-agnostic backend, SSE streaming, session context management, and auto-summarization.
+All project documentation — including the **Project Report**, **Project PPT**, and **Source Code** — is available in the `Documentation/` folder of this repository.
 
-## Features
+---
 
-- **Provider-Agnostic Backend**: Support for Gemini (default), OpenAI, Dialogflow ES, and Mock provider
-- **SSE Streaming**: Real-time streaming responses via Server-Sent Events
-- **Session Management**: Context retention, token budgets, and auto-summarization
-- **Security**: JWT authentication, rate limiting, input validation, safety guardrails
-- **Modern UI**: React + TypeScript + Tailwind CSS with Zustand state management
-- **Docker Support**: Complete Docker Compose setup for easy deployment
+# ✨ **Beli – MERN AI Chatbot**
 
-## Tech Stack
+### **Capstone Project – Full Stack Development**  
+**Authors:** Gurkirat Singh (23BAI70476) & Riya Kashyap (23BAD10002)
 
-### Frontend
-- React 18 + Vite
-- TypeScript
-- Tailwind CSS
-- Zustand (state management)
-- React Query (data fetching)
-- React Router
+---
 
-### Backend
-- Node.js + Express
-- TypeScript
-- MongoDB + Mongoose
-- JWT authentication
-- Pino logging
-- Zod validation
+## 🧠 About **Beli**
 
-### AI Providers
-- Google Gemini (default)
+**Beli (ਬੇਲੀ)** means **“a close friend / companion” in Punjabi (Gurmukhi)**.  
+The chatbot is designed as a **student-friendly AI study companion** — someone who feels approachable like a friend yet intelligent enough to help with academics, planning, summaries, and conversation.
+
+The goal of *Beli* is to provide university students with an AI assistant they can **study with, learn from, and talk to** — combining **cultural identity**, **modern AI**, and a **minimal, premium user experience**.
+
+---
+
+## 🚀 Overview
+
+A full-stack **MERN AI Chatbot** application with provider-agnostic backend, real-time streaming, session context management, and built-in safety features.
+
+---
+
+## 🧩 Features
+
+- 🤖 **Provider-Agnostic Backend** with support for:
+  - **Gemini (default)**
+  - OpenAI
+  - Dialogflow ES
+  - Mock Provider (for development/testing)
+
+- 🔥 **SSE Streaming** for real-time AI responses  
+- 🧵 **Session-Based Chat** with memory, token budgeting & auto-summarization  
+- 🛡️ **Security & Guardrails**
+  - JWT Authentication
+  - Rate Limiting
+  - Input Validation & Safety Filters  
+- 🎨 **Modern UI & UX**
+  - React + TypeScript + Tailwind  
+  - Zustand global state
+  - Student-centric clean UI  
+- 🐳 **Docker Support** for one-click deployment  
+
+---
+
+## 🧱 Tech Stack
+
+### 🎭 Frontend
+- React 18 + Vite  
+- TypeScript  
+- Tailwind CSS  
+- Zustand (State Management)  
+- React Query  
+- React Router  
+
+### 🧠 Backend
+- Node.js + Express  
+- TypeScript  
+- MongoDB + Mongoose  
+- JWT Auth  
+- Pino Logging  
+- Zod Validation  
+
+### 🤖 AI Providers
+- **Google Gemini (Primary)**
 - OpenAI
-- Google Dialogflow ES
-- Mock provider (for testing)
+- Dialogflow ES
+- Mock Provider (Deterministic for Testing)
 
-## Quick Start
+---
 
-### Prerequisites
+## ⚡ Quick Start
+
+### ✅ Prerequisites
 
 - Node.js 18+
 - pnpm 8+
 - Docker & Docker Compose (optional)
 - MongoDB (if not using Docker)
 
-### 1. Clone and Install
+### 1️⃣ Clone & Install
 
 ```bash
 cd my-project/CapstoneProject
 pnpm install
-```
+````
 
-### 2. Set Up Environment Variables
-
-Copy `.env.example` to `.env` and configure:
+### 2️⃣ Set Up Environment Variables
 
 ```bash
 cp .env.example .env
 ```
 
-Edit `.env` and set at minimum:
-- `JWT_SECRET` (min 32 characters)
-- `GEMINI_API_KEY` (get from [Google AI Studio](https://makersuite.google.com/app/apikey))
+Set at minimum inside `.env`:
 
-### 3. Start MongoDB
+* `JWT_SECRET` (32+ chars)
+* `GEMINI_API_KEY` – from Google AI Studio: [https://makersuite.google.com/app/apikey](https://makersuite.google.com/app/apikey)
 
-**Option A: Using Docker Compose (Recommended)**
+### 3️⃣ Start MongoDB
+
+**Option A: Docker (Recommended)**
 
 ```bash
 cd docker
 docker compose up -d mongo
 ```
 
-Wait until mongo is healthy, then optionally start mongo-express UI:
+Optional UI:
 
 ```bash
 docker compose --profile tools up -d mongo-express
-# Access at http://localhost:8081 (admin/admin)
+# http://localhost:8081  (admin/admin)
 ```
 
 **Option B: Local MongoDB**
+Ensure running on port `27017`.
 
-Ensure MongoDB is running locally on port 27017, or update `MONGO_URI` in `.env`.
-
-### 4. Seed Database (Optional)
+### 4️⃣ (Optional) Seed Database
 
 ```bash
 pnpm seed
 ```
 
-Creates demo user:
-- Email: `demo@example.com`
-- Password: `demo123456`
+Demo User:
+Email: `demo@example.com`
+Password: `demo123456`
 
-### 5. Start Development Servers
+### 5️⃣ Start Development
 
 ```bash
-# Start both API and Web
 pnpm dev
-
-# Or start individually:
-pnpm --filter @apps/api dev  # API on http://localhost:4000
-pnpm --filter @apps/web dev   # Web on http://localhost:5173
 ```
 
-### 6. Access the Application
+Or separately:
 
-- **Web UI**: http://localhost:5173
-- **API**: http://localhost:4000
-- **Health Check**: http://localhost:4000/health
-- **Mongo Express** (if enabled): http://localhost:8081
+```bash
+pnpm --filter @apps/api dev     # API on http://localhost:4000
+pnpm --filter @apps/web dev     # Web on http://localhost:5173
+```
 
-## Docker Deployment
+### 6️⃣ Open App
 
-### Full Stack with Docker
+* Web UI → [http://localhost:5173](http://localhost:5173)
+* API → [http://localhost:4000](http://localhost:4000)
+* Mongo Express → [http://localhost:8081](http://localhost:8081)
+
+---
+
+## 🐳 Docker Deployment
 
 ```bash
 cd docker
 docker compose --profile docker up -d
 ```
 
-This starts:
-- MongoDB (port 27017)
-- API (port 4000)
-- Web (port 5173)
-- Mongo Express (port 8081, optional)
+Starts:
 
-### Environment Variables for Docker
+* API
+* Web
+* MongoDB
+* Mongo Express (optional)
 
-Set environment variables in `.env` or pass them to `docker compose`:
+---
 
-```bash
-GEMINI_API_KEY=your_key docker compose --profile docker up -d
+## 🔧 Configuration
+
+### Gemini (Default Provider)
+
+```env
+GEMINI_API_KEY=your_key_here
 ```
 
-## Configuration
+Restart API after adding keys.
 
-### Provider Setup
+---
 
-#### Gemini (Default)
-
-1. Get API key from [Google AI Studio](https://makersuite.google.com/app/apikey)
-2. Add to `.env`: `GEMINI_API_KEY=your_key_here`
-3. Restart API: `pnpm --filter @apps/api dev`
-
-#### OpenAI (Optional)
-
-1. Get API key from [OpenAI Platform](https://platform.openai.com/api-keys)
-2. Add to `.env`: `OPENAI_API_KEY=your_key_here`
-3. Restart API
-4. In UI, select "OpenAI" provider
-
-#### Dialogflow ES (Optional)
-
-1. Create service account JSON at `/secrets/gcloud.json` (mounted in container)
-2. Set in `.env`:
-   ```
-   GOOGLE_APPLICATION_CREDENTIALS=/secrets/gcloud.json
-   DIALOGFLOW_PROJECT_ID=your_project_id
-   DIALOGFLOW_LANGUAGE_CODE=en
-   ```
-3. Restart API
-
-## API Endpoints
+## 📡 API Endpoints
 
 ### Auth
-- `POST /api/auth/register` - Register new user
-- `POST /api/auth/login` - Login
-- `POST /api/auth/logout` - Logout
-- `GET /api/auth/me` - Get current user
+
+| Method | Endpoint             | Description  |
+| ------ | -------------------- | ------------ |
+| POST   | `/api/auth/register` | Register     |
+| POST   | `/api/auth/login`    | Login        |
+| POST   | `/api/auth/logout`   | Logout       |
+| GET    | `/api/auth/me`       | Current user |
 
 ### Chat
-- `POST /api/chat` - Non-streaming chat
-- `POST /api/chat/stream` - SSE streaming chat
+
+| Method | Endpoint           | Description            |
+| ------ | ------------------ | ---------------------- |
+| POST   | `/api/chat`        | Non-streaming response |
+| POST   | `/api/chat/stream` | SSE streaming response |
 
 ### Sessions
-- `GET /api/sessions` - List sessions
-- `POST /api/sessions` - Create session
-- `GET /api/sessions/:id` - Get session
-- `POST /api/sessions/:id/clear` - Clear messages
-- `POST /api/sessions/:id/summarize` - Summarize conversation
-- `GET /api/sessions/messages?sessionId=...` - Get messages
-- `GET /api/sessions/export/:id` - Export session as JSON
 
-### Config & Metrics
-- `GET /api/config` - Get available providers and limits
-- `GET /api/metrics` - Get system metrics (latency, tokens, errors)
+| Method | Endpoint                            | Description    |
+| ------ | ----------------------------------- | -------------- |
+| GET    | `/api/sessions`                     | List sessions  |
+| POST   | `/api/sessions`                     | Create session |
+| GET    | `/api/sessions/:id`                 | Get session    |
+| POST   | `/api/sessions/:id/clear`           | Clear messages |
+| POST   | `/api/sessions/:id/summarize`       | Summarize chat |
+| GET    | `/api/sessions/messages?sessionId=` | Messages       |
+| GET    | `/api/sessions/export/:id`          | Export         |
 
-## Development
+---
 
-### Scripts
+## 📂 Project Structure
 
 ```bash
-pnpm dev          # Start all services in dev mode
-pnpm build        # Build all apps
-pnpm start        # Start production servers
-pnpm test         # Run tests
-pnpm lint         # Lint code
-pnpm format       # Format code
-pnpm seed         # Seed database
-```
-
-### Project Structure
-
-```
 .
+├── Documentation/          # Report, PPT, Code (Added for Capstone)
 ├── apps/
-│   ├── api/              # Backend API
-│   │   ├── src/
-│   │   │   ├── middleware/   # Auth, CORS, rate limiting, safety
-│   │   │   ├── routes/        # API routes
-│   │   │   ├── providers/     # AI provider adapters
-│   │   │   ├── services/      # Business logic
-│   │   │   ├── db/            # MongoDB models
-│   │   │   ├── utils/         # Utilities (SSE, logger, tokens)
-│   │   │   └── tests/          # Tests
-│   │   └── Dockerfile
-│   └── web/              # Frontend React app
-│       ├── src/
-│       │   ├── components/    # React components
-│       │   ├── pages/          # Page components
-│       │   ├── lib/            # API client, store, utils
-│       │   └── styles/         # Tailwind CSS
-│       └── Dockerfile
-├── docker/
-│   └── docker-compose.yml
+│   ├── api/                # Backend
+│   └── web/                # Frontend
+├── docker/                 # Docker configs
 └── .env.example
 ```
 
-## Testing
+---
 
-### Run Tests
-
-```bash
-# Backend tests
-pnpm --filter @apps/api test
-
-# Frontend tests
-pnpm --filter @apps/web test
-
-# All tests
-pnpm test
-```
-
-### Mock Provider
-
-The mock provider is available for testing and always enabled. It generates deterministic responses based on input messages.
-
-## Troubleshooting
-
-### MongoDB Connection Issues
-
-**Error**: `MongoDB connection failed`
-
-1. Check MongoDB is running: `docker compose ps` or `mongosh`
-2. Verify `MONGO_URI` in `.env` matches your setup
-3. For Docker: ensure services are on the same network (`mern-network`)
-
-### Provider Not Enabled
-
-**Error**: `Provider X is not enabled`
-
-1. Check `.env` has the required API key set
-2. Verify key is valid (not empty, correct format)
-3. Restart API after adding keys
-4. Check API logs for initialization errors
-
-### SSE Streaming Not Working
-
-**Issue**: Messages not streaming in UI
-
-1. Check browser console for errors
-2. Verify `/api/chat/stream` endpoint returns SSE headers
-3. Check network tab shows `text/event-stream` content type
-4. Ensure CORS is configured correctly (`CLIENT_ORIGIN` in `.env`)
-
-### Rate Limiting
-
-**Error**: `429 Too many requests`
-
-- Default: 100 requests per 15 minutes per IP/user
-- Adjust in `config.ts` or environment variables
-- For production, consider Redis-based rate limiting
-
-### Authentication Issues
-
-**Error**: `401 Authentication required`
-
-1. Check JWT cookie is set (httpOnly, secure if production)
-2. Verify `JWT_SECRET` is set and consistent
-3. Clear cookies and re-login
-4. Check token expiration (`JWT_EXPIRES`)
-
-### Port Already in Use
-
-**Error**: `EADDRINUSE: address already in use`
+## 🧪 Testing
 
 ```bash
-# Find process using port
-lsof -i :4000  # API
-lsof -i :5173  # Web
-lsof -i :27017 # MongoDB
-
-# Kill process or change PORT in .env
+pnpm test                       # All tests
+pnpm --filter @apps/api test     # Backend
+pnpm --filter @apps/web test     # Frontend
 ```
 
-## Production Deployment
+Mock provider requires no keys and ensures deterministic tests.
 
-### Environment Variables
+---
 
-Set production values:
-- `NODE_ENV=production`
-- `COOKIE_SECURE=true` (requires HTTPS)
-- `JWT_SECRET` (use strong random secret)
-- `MONGO_URI` (production MongoDB connection string)
+## 🛑 Troubleshooting (Quick)
 
-### Build
+* **401 Auth:** Clear cookies, re-login, check JWT_SECRET
+* **Mongo Fail:** Check container health or connection string
+* **Provider Disabled:** Missing API Key in `.env`
+* **SSE Not Streaming:** CORS headers or proxy issue
 
-```bash
-pnpm build
-```
+---
 
-### Docker Production
+## 🚀 Production Security Checklist
 
-```bash
-cd docker
-docker compose --profile docker up -d
-```
+* ✅ Strong `JWT_SECRET` (32+ chars)
+* ✅ Enable HTTPS + `COOKIE_SECURE=true`
+* ✅ Restrictive CORS
+* ✅ Rate Limiting
+* ✅ MongoDB Auth Enabled
+* ✅ Monitoring enabled
 
-### Security Checklist
+---
 
-- [ ] Use strong `JWT_SECRET` (32+ characters)
-- [ ] Enable `COOKIE_SECURE=true` with HTTPS
-- [ ] Set restrictive CORS (`CLIENT_ORIGIN`)
-- [ ] Use production MongoDB with authentication
-- [ ] Enable rate limiting (consider Redis)
-- [ ] Set up monitoring and logging
-- [ ] Keep dependencies updated
-
-## License
+## 📜 License
 
 MIT
-
-## Support
-
-For issues and questions:
-1. Check the Troubleshooting section above
-2. Review API logs: `pnpm --filter @apps/api dev`
-3. Check browser console for frontend errors
-4. Verify environment variables are set correctly
-
-
+All rights reserved with **Authors:** Gurkirat Singh (23BAI70476) & Riya Kashyap (23BAD10002)
+---
