@@ -67,11 +67,18 @@ export default function Login() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-lg shadow-md">
-        <div>
-          <h2 className="text-center text-3xl font-extrabold text-gray-900">
+        <div className="text-center">
+          <div className="flex justify-center mb-4">
+            <img 
+              src="/beli_logo_light.svg" 
+              alt="Beli Logo" 
+              className="w-16 h-16"
+            />
+          </div>
+          <h2 className="text-3xl font-extrabold text-gray-900">
             {isLogin ? 'Sign in' : 'Sign up'}
           </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">Beli — Your Study Buddy & Uni Companion</p>
+          <p className="mt-2 text-sm text-gray-600">Beli — Your Study Buddy & Uni Companion</p>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           {error && (

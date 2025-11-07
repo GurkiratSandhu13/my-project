@@ -3,6 +3,7 @@ import { useChatStore } from '../../lib/store';
 import { sessionsApi } from '../../lib/api';
 import { formatRelativeTime } from '../../lib/format';
 import { Pencil } from 'lucide-react';
+import ConfirmDialog from '../ui/ConfirmDialog';
 
 interface Session {
   _id: string;
@@ -14,6 +15,7 @@ interface Session {
 function InlineRename({ id, title, onRenamed }: { id: string; title: string; onRenamed: (t: string) => void }) {
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(title);
+  const [errorDialog, setErrorDialog] = useState(false);
 
   useEffect(() => setValue(title), [title]);
 
@@ -29,7 +31,7 @@ function InlineRename({ id, title, onRenamed }: { id: string; title: string; onR
       await sessionsApi.update(id, { title: newTitle });
     } catch (e) {
       onRenamed(prev);
-      alert('Rename failed');
+      setErrorDialog(true);
     } finally {
       setEditing(false);
     }
@@ -52,20 +54,32 @@ function InlineRename({ id, title, onRenamed }: { id: string; title: string; onR
   }
 
   return (
-    <div className="flex items-center justify-between">
-      <div className="font-medium truncate">{title}</div>
-      <button
-        className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-200 rounded"
-        onClick={(e) => {
-          e.stopPropagation();
-          setEditing(true);
-        }}
-        aria-label="Rename"
-        title="Rename"
-      >
-        <Pencil className="w-3.5 h-3.5" />
-      </button>
-    </div>
+    <>
+      <div className="flex items-center justify-between">
+        <div className="font-medium truncate">{title}</div>
+        <button
+          className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-200 rounded"
+          onClick={(e) => {
+            e.stopPropagation();
+            setEditing(true);
+          }}
+          aria-label="Rename"
+          title="Rename"
+        >
+          <Pencil className="w-3.5 h-3.5" />
+        </button>
+      </div>
+      
+      <ConfirmDialog
+        open={errorDialog}
+        onClose={() => setErrorDialog(false)}
+        onConfirm={() => setErrorDialog(false)}
+        title="Rename Failed"
+        description="Unable to rename the session. Please try again."
+        confirmText="OK"
+        variant="default"
+      />
+    </>
   );
 }
 
@@ -73,6 +87,15 @@ export default function HistorySidebar({ onClose }: { onClose: () => void }) {
   const { currentSessionId, setCurrentSession } = useChatStore();
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(false);
+  const [errorDialog, setErrorDialog] = useState<{
+    open: boolean;
+    title: string;
+    description: string;
+  }>({
+    open: false,
+    title: '',
+    description: ''
+  });
 
   useEffect(() => {
     loadSessions();
@@ -107,7 +130,11 @@ export default function HistorySidebar({ onClose }: { onClose: () => void }) {
     } catch (error: any) {
       console.error('Failed to create session:', error);
       const errorMessage = error?.response?.data?.error || error?.response?.data?.message || 'Failed to create session';
-      alert(`Error: ${errorMessage}`);
+      setErrorDialog({
+        open: true,
+        title: 'Session Creation Failed',
+        description: `Unable to create a new session: ${errorMessage}`
+      });
     }
   };
 
@@ -127,7 +154,7 @@ export default function HistorySidebar({ onClose }: { onClose: () => void }) {
   return (
     <div className="h-full flex flex-col">
       <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Sessions</h2>
+        <h2 className="text-lg font-semibold">History</h2>
         <button
           onClick={onClose}
           className="p-1 hover:bg-gray-100 rounded"
@@ -177,6 +204,16 @@ export default function HistorySidebar({ onClose }: { onClose: () => void }) {
           </div>
         )}
       </div>
+      
+      <ConfirmDialog
+        open={errorDialog.open}
+        onClose={() => setErrorDialog(prev => ({ ...prev, open: false }))}
+        onConfirm={() => setErrorDialog(prev => ({ ...prev, open: false }))}
+        title={errorDialog.title}
+        description={errorDialog.description}
+        confirmText="OK"
+        variant="default"
+      />
     </div>
   );
 }

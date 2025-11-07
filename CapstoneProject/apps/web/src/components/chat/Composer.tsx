@@ -1,15 +1,25 @@
 import { useState, useRef, useEffect } from 'react';
+import { Send } from 'lucide-react';
 import { useChatStore } from '../../lib/store';
 import { chatApi } from '../../lib/api';
-import { sessionsApi } from '../../lib/api';
+import ConfirmDialog from '../ui/ConfirmDialog';
 
 export default function Composer() {
-  const { currentSessionId, provider, model, temperature, systemPrompt, setCurrentSession } =
+  const { currentSessionId, provider, model, temperature, systemPrompt } =
     useChatStore();
   const [content, setContent] = useState('');
   const [loading, setLoading] = useState(false);
   const [streaming, setStreaming] = useState(false);
   const [streamedContent, setStreamedContent] = useState('');
+  const [errorDialog, setErrorDialog] = useState<{
+    open: boolean;
+    title: string;
+    description: string;
+  }>({
+    open: false,
+    title: '',
+    description: ''
+  });
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -46,7 +56,11 @@ export default function Composer() {
           } else if (chunk.type === 'event' && chunk.name === 'error') {
             setStreaming(false);
             setLoading(false);
-            alert('Error: ' + (chunk.data?.message || 'Unknown error'));
+            setErrorDialog({
+              open: true,
+              title: 'Streaming Error',
+              description: chunk.data?.message || 'An unknown error occurred during streaming.'
+            });
           }
         }
       );
@@ -54,7 +68,11 @@ export default function Composer() {
       setStreaming(false);
       setLoading(false);
       const errorMessage = error?.response?.data?.error || error?.response?.data?.message || error?.message || 'Failed to send message';
-      alert('Error: ' + errorMessage);
+      setErrorDialog({
+        open: true,
+        title: 'Message Failed',
+        description: errorMessage
+      });
     }
   };
 
@@ -91,11 +109,26 @@ export default function Composer() {
         <button
           onClick={handleSend}
           disabled={loading || streaming || !content.trim()}
-          className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="p-3 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          title={loading || streaming ? 'Sending...' : 'Send message'}
         >
-          {loading || streaming ? 'Sending...' : 'Send'}
+          {loading || streaming ? (
+            <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
+          ) : (
+            <Send className="w-4 h-4" />
+          )}
         </button>
       </div>
+      
+      <ConfirmDialog
+        open={errorDialog.open}
+        onClose={() => setErrorDialog(prev => ({ ...prev, open: false }))}
+        onConfirm={() => setErrorDialog(prev => ({ ...prev, open: false }))}
+        title={errorDialog.title}
+        description={errorDialog.description}
+        confirmText="OK"
+        variant="destructive"
+      />
     </div>
   );
 }

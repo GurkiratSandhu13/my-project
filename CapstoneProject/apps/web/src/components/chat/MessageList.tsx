@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useChatStore } from '../../lib/store';
 import { sessionsApi } from '../../lib/api';
 import { formatTime } from '../../lib/format';
+import ConfirmDialog from '../ui/ConfirmDialog';
 
 interface Message {
   _id: string;
@@ -18,6 +19,15 @@ export default function MessageList() {
   const { currentSessionId } = useChatStore();
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
+  const [errorDialog, setErrorDialog] = useState<{
+    open: boolean;
+    title: string;
+    description: string;
+  }>({
+    open: false,
+    title: '',
+    description: ''
+  });
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -35,7 +45,11 @@ export default function MessageList() {
         const errorMessage = error?.response?.data?.error || error?.response?.data?.message || 'Failed to load messages';
         // Only show error if it's not a 404 (no messages yet)
         if (error?.response?.status !== 404) {
-          alert(`Error loading messages: ${errorMessage}`);
+          setErrorDialog({
+            open: true,
+            title: 'Failed to Load Messages',
+            description: errorMessage
+          });
         }
         setMessages([]);
       } finally {
@@ -80,38 +94,58 @@ export default function MessageList() {
   }
 
   return (
-    <div className="p-4 space-y-4">
+    <div className="p-4 space-y-6">
       {messages.map((message) => (
         <div
           key={message._id}
           className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
         >
           <div
-            className={`max-w-3xl rounded-lg px-4 py-2 ${
+            className={`max-w-prose rounded-xl px-4 py-3 shadow-sm ${
               message.role === 'user'
                 ? 'bg-indigo-600 text-white'
                 : message.role === 'system'
-                ? 'bg-gray-200 text-gray-800'
+                ? 'bg-amber-50 border border-amber-200 text-amber-900'
                 : 'bg-white border border-gray-200 text-gray-900'
             }`}
           >
-            <div className="whitespace-pre-wrap break-words">{message.content}</div>
+            <div className="prose prose-sm max-w-none">
+              <div className="whitespace-pre-wrap break-words overflow-x-auto">
+                {message.content}
+              </div>
+            </div>
             <div
-              className={`text-xs mt-1 ${
-                message.role === 'user' ? 'text-indigo-200' : 'text-gray-500'
+              className={`text-xs mt-2 pt-1 border-t ${
+                message.role === 'user' 
+                  ? 'text-indigo-200 border-indigo-400/30' 
+                  : message.role === 'system'
+                  ? 'text-amber-600 border-amber-200'
+                  : 'text-gray-500 border-gray-200'
               }`}
             >
-              {formatTime(message.createdAt)}
-              {message.providerMeta && (
-                <span className="ml-2">
-                  {message.providerMeta.provider} / {message.providerMeta.model}
-                </span>
-              )}
+              <div className="flex items-center justify-between">
+                <span>{formatTime(message.createdAt)}</span>
+                {message.providerMeta && (
+                  <span className="text-xs opacity-75">
+                    {message.providerMeta.provider} • {message.providerMeta.model}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
         </div>
       ))}
       <div ref={messagesEndRef} />
+      
+      <ConfirmDialog
+        open={errorDialog.open}
+        onClose={() => setErrorDialog(prev => ({ ...prev, open: false }))}
+        onConfirm={() => setErrorDialog(prev => ({ ...prev, open: false }))}
+        title={errorDialog.title}
+        description={errorDialog.description}
+        confirmText="OK"
+        variant="destructive"
+      />
     </div>
   );
 }

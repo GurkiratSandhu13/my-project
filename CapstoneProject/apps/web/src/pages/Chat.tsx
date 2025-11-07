@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
+import { Settings } from 'lucide-react';
 import { useChatStore } from '../lib/store';
 import { authApi, sessionsApi } from '../lib/api';
 import { useNavigate } from 'react-router-dom';
 import ChatWindow from '../components/chat/ChatWindow';
 import HistorySidebar from '../components/chat/HistorySidebar';
-import ModelSelector from '../components/chat/ModelSelector';
-import Controls from '../components/chat/Controls';
+import ChatActions from '../components/chat/ChatActions';
+import SettingsDialog from '../components/settings/SettingsDialog';
+import ConfirmDialog from '../components/ui/ConfirmDialog';
 
 interface Session {
   _id: string;
@@ -19,6 +21,8 @@ export default function Chat() {
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [initializing, setInitializing] = useState(true);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [logoutConfirm, setLogoutConfirm] = useState(false);
 
   const handleLogout = async () => {
     try {
@@ -84,11 +88,12 @@ export default function Chat() {
         <HistorySidebar onClose={() => setSidebarOpen(false)} />
       </div>
       <div className="flex-1 flex flex-col">
-        <div className="bg-white border-b border-gray-200 px-4 py-2 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+        <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="p-2 hover:bg-gray-100 rounded"
+              className="p-2 hover:bg-gray-100 rounded-md transition-colors"
+              title={sidebarOpen ? 'Hide history' : 'Show history'}
             >
               <svg
                 className="w-5 h-5"
@@ -104,28 +109,57 @@ export default function Chat() {
                 />
               </svg>
             </button>
-            <h1 className="text-xl font-semibold">Beli — Your Study Buddy</h1>
-            <div className="ml-4"><ModelSelector /></div>
+            <div className="flex items-center gap-3">
+              <img 
+                src="/beli_logo_light.svg" 
+                alt="Beli Logo" 
+                className="w-8 h-8"
+              />
+              <h1 className="text-xl font-semibold text-gray-900">Beli — Your Study Buddy</h1>
+            </div>
           </div>
-          <div className="flex items-center gap-4">
+          
+          <div className="flex items-center gap-3">
+            <ChatActions />
+            <div className="w-px h-6 bg-gray-300" />
+            <button
+              onClick={() => setSettingsOpen(true)}
+              className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
+              title="Settings"
+            >
+              <Settings className="w-5 h-5" />
+            </button>
             <span className="text-sm text-gray-600">{user.email}</span>
             <button
-              onClick={handleLogout}
-              className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded"
+              onClick={() => setLogoutConfirm(true)}
+              className="px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
             >
               Logout
             </button>
           </div>
         </div>
-        <div className="flex-1 flex">
-          <div className="flex-1">
-            <ChatWindow />
-          </div>
-          <div className="w-80 border-l border-gray-200 bg-white">
-            <Controls />
-          </div>
+        
+        <div className="flex-1 overflow-hidden">
+          <ChatWindow />
         </div>
       </div>
+
+      {settingsOpen && (
+        <SettingsDialog onClose={() => setSettingsOpen(false)} />
+      )}
+
+      <ConfirmDialog
+        open={logoutConfirm}
+        onClose={() => setLogoutConfirm(false)}
+        onConfirm={() => {
+          setLogoutConfirm(false);
+          handleLogout();
+        }}
+        title="Confirm Logout"
+        description="Are you sure you want to logout? You'll need to sign in again to continue using Beli."
+        confirmText="Logout"
+        variant="default"
+      />
     </div>
   );
 }
